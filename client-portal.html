@@ -1073,26 +1073,29 @@ $('deliverableUploadForm').addEventListener('submit', async (e) => {
   const allowedExtensions = /\.(tar|tar\.gz|tgz|zip|json|csv|pdf)$/i;
   if (!allowedExtensions.test(file.name)) {
     message('deliverableUploadMessage', 'Choose a TAR, TAR.GZ, TGZ, ZIP, JSON, CSV or PDF file.', 'error');
-    button.disabled = true;
-   message('deliverableUploadMessage', 'Uploading file securely…');
-   try {
-     const {data:intent,error:intentError}=await supabase.functions.invoke('byot-submissions',{body:{action:'admin_upload_intent',project_id:projectId,file_name:file.name,file_size_bytes:file.size,mime_type:contentType}});
-     if(intentError)throw intentError;
-     const uploaded=await fetch(intent.upload_url,{method:'PUT',headers:intent.headers,body:file});
-     if(!uploaded.ok)throw new Error('File upload failed ('+uploaded.status+').');
-     const {data:saved,error:saveError}=await supabase.functions.invoke('byot-submissions',{body:{action:'admin_finalize_upload',project_id:projectId,file_name:file.name,storage_path:intent.storage_path,description}});
-     if(saveError)throw saveError;
-     if(!saved?.success)throw new Error(saved?.error||'Unable to publish the deliverable.');
-$('deliverableFile').value = '';
+    return;
+  }
+  const extension = file.name.toLowerCase().split('.').pop();
+  const contentType = file.type || ({pdf:'application/pdf',zip:'application/zip',json:'application/json',csv:'text/csv',gz:'application/gzip',tgz:'application/gzip',tar:'application/x-tar'}[extension] || 'application/octet-stream');
+  button.disabled = true;
+  message('deliverableUploadMessage', 'Uploading file securely…');
+  try {
+    const {data:intent,error:intentError}=await supabase.functions.invoke('byot-submissions',{body:{action:'admin_upload_intent',project_id:projectId,file_name:file.name,file_size_bytes:file.size,mime_type:contentType}});
+    if(intentError)throw intentError;
+    const uploaded=await fetch(intent.upload_url,{method:'PUT',headers:intent.headers,body:file});
+    if(!uploaded.ok)throw new Error('File upload failed ('+uploaded.status+').');
+    const {data:saved,error:saveError}=await supabase.functions.invoke('byot-submissions',{body:{action:'admin_finalize_upload',project_id:projectId,file_name:file.name,storage_path:intent.storage_path,description}});
+    if(saveError)throw saveError;
+    if(!saved?.success)throw new Error(saved?.error||'Unable to publish the deliverable.');
+    $('deliverableFile').value = '';
     $('deliverableDescription').value = '';
     message('deliverableUploadMessage', 'Deliverable uploaded successfully. The assigned client can now find it in the Deliverables section of their project dashboard.', 'success');
   } catch (err) {
-     message('deliverableUploadMessage', err.message || 'Unable to upload this deliverable.', 'error');
+    message('deliverableUploadMessage', err.message || 'Unable to upload this deliverable.', 'error');
   } finally {
     button.disabled = false;
   }
 });
-
 async function loadTeamLeadDashboard(user){
  $('dashboardEyebrow').textContent='Savannah team lead portal';
  $('welcomeTitle').textContent='Team production dashboard';
