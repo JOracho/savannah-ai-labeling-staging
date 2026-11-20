@@ -249,7 +249,9 @@ window.SAVANNAH_AUTH_MODE = 'login';
     if (box) { box.textContent = 'Authentication could not start: ' + message; box.className = 'notice error'; }
   });
   window.addEventListener('error', (event) => {
-    const detail = event.message || (event.target && event.target.tagName === 'SCRIPT' ? 'A script failed to load.' : '');
+    const base = event.message || (event.target && event.target.tagName === 'SCRIPT' ? 'A script failed to load.' : '');
+    const location = event.lineno ? ' (line ' + event.lineno + ', column ' + (event.colno || '?') + ')' : '';
+    const detail = base ? base + location : '';
     if (detail) {
       window.SAVANNAH_AUTH_LOAD_ERROR = detail;
       const box = byId('authMessage');
