@@ -227,6 +227,17 @@ window.SAVANNAH_AUTH_MODE = 'login';
     byId('forgotPasswordLink').classList.toggle('hidden', signup);
     byId('authMessage').classList.add('hidden');
   }
+  /* Prevent a failed auth module from triggering a native form reload back to Sign in. */
+  byId('authForm').addEventListener('submit', (event) => {
+    if (!window.SAVANNAH_AUTH_READY) {
+      event.preventDefault();
+      const box = byId('authMessage');
+      if (box) {
+        box.textContent = 'The registration service did not finish loading. Please refresh this page. Your account has not been submitted.';
+        box.className = 'notice error';
+      }
+    }
+  }, true);
   byId('loginTab').addEventListener('click', () => switchAuthMode('login'));
   byId('signupTab').addEventListener('click', () => switchAuthMode('signup'));
   window.addEventListener('unhandledrejection', (event) => {
@@ -398,6 +409,7 @@ $('authForm').addEventListener('submit',async(e)=>{
  } catch(err){message('authMessage',err.message||'Unable to complete sign in.','error');}
  finally{$('authSubmit').disabled=false;}
 });
+window.SAVANNAH_AUTH_READY = true;
 $('verifyEmailForm').addEventListener('submit',async(e)=>{
  e.preventDefault(); $('verifyEmailSubmit').disabled=true;
  try{
