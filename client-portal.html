@@ -233,7 +233,10 @@ window.SAVANNAH_AUTH_MODE = 'login';
       event.preventDefault();
       const box = byId('authMessage');
       if (box) {
-        box.textContent = 'The registration service did not finish loading. Please refresh this page. Your account has not been submitted.';
+        const detail = window.SAVANNAH_AUTH_LOAD_ERROR;
+        box.textContent = detail
+          ? 'Authentication module error: ' + detail + '. Your account has not been submitted.'
+          : 'The authentication module did not finish loading. Open the browser console (F12), copy the first red error, and send it to Savannah support. Your account has not been submitted.';
         box.className = 'notice error';
       }
     }
@@ -246,9 +249,11 @@ window.SAVANNAH_AUTH_MODE = 'login';
     if (box) { box.textContent = 'Authentication could not start: ' + message; box.className = 'notice error'; }
   });
   window.addEventListener('error', (event) => {
-    if (event.target && event.target.tagName === 'SCRIPT') {
+    const detail = event.message || (event.target && event.target.tagName === 'SCRIPT' ? 'A script failed to load.' : '');
+    if (detail) {
+      window.SAVANNAH_AUTH_LOAD_ERROR = detail;
       const box = byId('authMessage');
-      if (box) { box.textContent = 'The authentication module failed to load. Please refresh this page or contact Savannah support.'; box.className = 'notice error'; }
+      if (box) { box.textContent = 'Authentication module error: ' + detail; box.className = 'notice error'; }
     }
   }, true);
 })();
