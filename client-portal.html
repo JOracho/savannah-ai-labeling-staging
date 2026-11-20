@@ -258,6 +258,7 @@ const FUNCTION_URLS = {
 const neon = createClient({ auth: { adapter: SupabaseAuthAdapter(), url: NEON_AUTH_URL }, dataApi: { url: NEON_DATA_API_URL } });
 const authClient = createAuthClient(NEON_AUTH_URL);
 let pendingVerificationEmail = '';
+let pendingVerificationPassword = '';
 async function callNeonFunction(url, body) {
   const { data: sessionData, error: sessionError } = await neon.auth.getSession();
   const token = sessionData?.session?.access_token;
@@ -374,12 +375,24 @@ $('authForm').addEventListener('submit',async(e)=>{
     const {data,error}=await authClient.signUp.email({email,password,name:$('fullName').value.trim()});
     if(error) throw error;
     pendingVerificationEmail=email;
+    pendingVerificationPassword=password;
     $('verifyEmailForm').classList.remove('hidden');
     $('authForm').classList.add('hidden');
     $('forgotPasswordLink').classList.add('hidden');
     message('authMessage','A verification code has been requested for '+email+'. Check Inbox, Spam and Promotions, then enter the code below.','success');
   } else {
-    const {data,error}=await supabase.auth.signInWithPassword({email,password}); if(error) throw error;
+    const {data,error}=await authClient.signIn.email({email,password});
+    if(error){
+      if(/email.*(not|isn.t)\s*verified/i.test(error.message||'')){
+        pendingVerificationEmail=email;pendingVerificationPassword=password;
+        const sent=await authClient.emailOtp.sendVerificationOtp({email,type:'email-verification'});
+        if(sent.error)throw sent.error;
+        $('verifyEmailForm').classList.remove('hidden');$('authForm').classList.add('hidden');
+        message('authMessage','Your email is not verified yet. We have requested a new verification code. Enter it below.','success');
+        return;
+      }
+      throw error;
+    }
     await showDashboard(data.user);
   }
  } catch(err){message('authMessage',err.message||'Unable to complete sign in.','error');}
@@ -388,11 +401,13 @@ $('authForm').addEventListener('submit',async(e)=>{
 $('verifyEmailForm').addEventListener('submit',async(e)=>{
  e.preventDefault(); $('verifyEmailSubmit').disabled=true;
  try{
-  const {data,error}=await authClient.emailOtp.verifyEmail({email:pendingVerificationEmail||$('email').value.trim(),otp:$('verificationCode').value.trim()});
+  const email=pendingVerificationEmail||$('email').value.trim();
+  const {error}=await authClient.emailOtp.verifyEmail({email,otp:$('verificationCode').value.trim()});
   if(error)throw error;
+  const loginResult=await authClient.signIn.email({email,password:pendingVerificationPassword});
+  if(loginResult.error)throw loginResult.error;
   $('verifyEmailForm').classList.add('hidden');$('authForm').classList.remove('hidden');
-  setMode('login');
-  message('authMessage','Your email is verified. You can now sign in with your email and password. Administrator access will be activated separately after verification.','success');
+  await showDashboard(loginResult.data.user);
  }catch(err){message('authMessage',err.message||'The verification code could not be confirmed.','error');}
  finally{$('verifyEmailSubmit').disabled=false;}
 });
