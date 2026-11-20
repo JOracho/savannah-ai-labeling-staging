@@ -319,18 +319,17 @@ function setMode(next) {
   $('authMessage').classList.add('hidden');
 }
 $('loginTab').addEventListener('click',()=>setMode('login'));
-$('signupTab').addEventListener('click',()=>{$('forgotPasswordLink').classList.add('hidden');});
+$('signupTab').addEventListener('click',()=>{setMode('signup');$('forgotPasswordLink').classList.add('hidden');});
 $('loginTab').addEventListener('click',()=>{$('forgotPasswordLink').classList.remove('hidden');});
-$('signupTab').addEventListener('click',()=>setMode('signup'));
 $('authForm').addEventListener('submit',async(e)=>{
  e.preventDefault(); $('authSubmit').disabled=true;
  try {
   const email=$('email').value.trim(), password=$('password').value;
   if(mode==='signup'){
-    const {data,error}=await supabase.auth.signUp({email,password,options:{data:{full_name:$('fullName').value.trim()},emailRedirectTo:'https://joracho.github.io/savannah-ai-labeling/client-portal.html'}});
+    const {data,error}=await supabase.auth.signUp({email,password,options:{data:{full_name:$('fullName').value.trim()},emailRedirectTo:(new URLSearchParams(window.location.search).get('portal')==='admin'?'https://joracho.github.io/savannah-ai-labeling-staging/admin-portal.html':'https://joracho.github.io/savannah-ai-labeling-staging/client-portal.html')}});
     if(error) throw error;
-    if(data.session){ await showDashboard(data.user); }
-    else message('authMessage','Account created. Check your email to confirm your address, then return here to sign in.','success');
+    if(data.session){ await supabase.auth.signOut(); }
+    message('authMessage','Your account registration has been submitted. Check your email to verify the address. For the Administrator Portal, Savannah must activate administrator access after registration. Return to this staging portal after verifying your email.','success');
   } else {
     const {data,error}=await supabase.auth.signInWithPassword({email,password}); if(error) throw error;
     await showDashboard(data.user);
