@@ -26,6 +26,13 @@ a{color:inherit}.topbar{background:var(--green);color:#fff;padding:14px 0}.wrap{
     <button class="btn" id="authSubmit" type="submit" style="margin-top:18px">Sign in</button>
   </form>
   <div id="authMessage" class="notice hidden" role="status"></div>
+  <form id="verifyEmailForm" class="hidden">
+    <p class="muted">Enter the verification code sent to your email address.</p>
+    <label for="verificationCode">Email verification code</label>
+    <input id="verificationCode" inputmode="numeric" autocomplete="one-time-code" maxlength="8" pattern="[0-9]{6,8}" required>
+    <button class="btn" id="verifyEmailSubmit" type="submit" style="margin-top:14px">Verify email</button>
+    <button class="btn secondary" id="resendVerification" type="button" style="margin-top:14px">Resend code</button>
+  </form>
   <p id="forgotPasswordLink" class="hint"><a href="password-recovery.html" style="color:var(--green);font-weight:700">Forgot password?</a></p>
   <p class="hint">Use the email address associated with your Savannah AI Labeling account. If you are new, create an account first.</p>
 </section>
@@ -237,6 +244,7 @@ window.SAVANNAH_AUTH_MODE = 'login';
 </script>
 <script type="module">
 import { createClient, SupabaseAuthAdapter } from 'https://esm.sh/@neondatabase/neon-js@0.9.0-beta';
+import { createAuthClient } from 'https://esm.sh/@neondatabase/neon-js@0.9.0-beta/auth';
 const NEON_AUTH_URL = 'https://ep-proud-frost-b9l8tcnp.neonauth.c-7.eu-central-1.aws.neon.tech/savannah_staging/auth';
 const NEON_DATA_API_URL = 'https://ep-proud-frost-b9l8tcnp.apirest.c-7.eu-central-1.aws.neon.tech/savannah_staging/rest/v1';
 const FUNCTION_URLS = {
@@ -248,6 +256,8 @@ const FUNCTION_URLS = {
   'cvat-connection-test': 'https://br-calm-cherry-b973fs8j-cvatconnect.compute.c-7.eu-central-1.aws.neon.tech/'
 };
 const neon = createClient({ auth: { adapter: SupabaseAuthAdapter(), url: NEON_AUTH_URL }, dataApi: { url: NEON_DATA_API_URL } });
+const authClient = createAuthClient(NEON_AUTH_URL);
+let pendingVerificationEmail = '';
 async function callNeonFunction(url, body) {
   const { data: sessionData, error: sessionError } = await neon.auth.getSession();
   const token = sessionData?.session?.access_token;
@@ -361,16 +371,41 @@ $('authForm').addEventListener('submit',async(e)=>{
  try {
   const email=$('email').value.trim(), password=$('password').value;
   if(mode==='signup'){
-    const {data,error}=await supabase.auth.signUp({email,password,options:{data:{full_name:$('fullName').value.trim()},emailRedirectTo:(new URLSearchParams(window.location.search).get('portal')==='admin'?'https://joracho.github.io/savannah-ai-labeling-staging/admin-portal.html':'https://joracho.github.io/savannah-ai-labeling-staging/client-portal.html')}});
+    const {data,error}=await authClient.signUp.email({email,password,name:$('fullName').value.trim()});
     if(error) throw error;
-    if(data.session){ await supabase.auth.signOut(); }
-    message('authMessage','Your account registration has been submitted. Check your email to verify the address. For the Administrator Portal, Savannah must activate administrator access after registration. Return to this staging portal after verifying your email.','success');
+    pendingVerificationEmail=email;
+    $('verifyEmailForm').classList.remove('hidden');
+    $('authForm').classList.add('hidden');
+    $('forgotPasswordLink').classList.add('hidden');
+    message('authMessage','A verification code has been requested for '+email+'. Check Inbox, Spam and Promotions, then enter the code below.','success');
   } else {
     const {data,error}=await supabase.auth.signInWithPassword({email,password}); if(error) throw error;
     await showDashboard(data.user);
   }
  } catch(err){message('authMessage',err.message||'Unable to complete sign in.','error');}
  finally{$('authSubmit').disabled=false;}
+});
+$('verifyEmailForm').addEventListener('submit',async(e)=>{
+ e.preventDefault(); $('verifyEmailSubmit').disabled=true;
+ try{
+  const {data,error}=await authClient.emailOtp.verifyEmail({email:pendingVerificationEmail||$('email').value.trim(),otp:$('verificationCode').value.trim()});
+  if(error)throw error;
+  $('verifyEmailForm').classList.add('hidden');$('authForm').classList.remove('hidden');
+  setMode('login');
+  message('authMessage','Your email is verified. You can now sign in with your email and password. Administrator access will be activated separately after verification.','success');
+ }catch(err){message('authMessage',err.message||'The verification code could not be confirmed.','error');}
+ finally{$('verifyEmailSubmit').disabled=false;}
+});
+$('resendVerification').addEventListener('click',async()=>{
+ const email=pendingVerificationEmail||$('email').value.trim();
+ if(!email){message('authMessage','Enter your email address first.','error');return;}
+ $('resendVerification').disabled=true;
+ try{
+  const {error}=await authClient.emailOtp.sendVerificationOtp({email,type:'email-verification'});
+  if(error)throw error;
+  message('authMessage','A new verification code has been requested. Check Inbox, Spam and Promotions.','success');
+ }catch(err){message('authMessage',err.message||'Unable to resend the verification code.','error');}
+ finally{$('resendVerification').disabled=false;}
 });
 function labelStatus(s){return ({project_submitted:'Project submitted',data_received:'Data received',data_verified:'Data verified',annotation_in_progress:'Annotation in progress',quality_assurance:'Quality assurance',client_review:'Client review',revision_required:'Revision required',completed:'Completed',delivered:'Delivered',on_hold:'On hold'})[s]||s;}
 let adminProjects=[];
