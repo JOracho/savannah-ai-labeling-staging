@@ -256,6 +256,7 @@ window.SAVANNAH_AUTH_MODE = 'login';
 <script type="module">
 import { createClient, SupabaseAuthAdapter } from 'https://esm.sh/@neondatabase/neon-js@0.9.0-beta';
 import { createAuthClient } from 'https://esm.sh/@neondatabase/neon-js@0.9.0-beta/auth';
+try {
 const NEON_AUTH_URL = 'https://ep-proud-frost-b9l8tcnp.neonauth.c-7.eu-central-1.aws.neon.tech/savannah_staging/auth';
 const NEON_DATA_API_URL = 'https://ep-proud-frost-b9l8tcnp.apirest.c-7.eu-central-1.aws.neon.tech/savannah_staging/rest/v1';
 const FUNCTION_URLS = {
@@ -1313,6 +1314,15 @@ $('signOut').addEventListener('click',async()=>{await supabase.auth.signOut();$(
 supabase.auth.onAuthStateChange((_event,session)=>{if(session?.user && $('dashboard').classList.contains('hidden')) showDashboard(session.user).catch(e=>message('dashboardMessage',e.message,'error'));});
 const {data:{session}}=await supabase.auth.getSession();
 if(session?.user){try{await showDashboard(session.user);}catch(e){message('dashboardMessage',e.message,'error');}}
+
+} catch (error) {
+  console.error('Savannah authentication module initialization failed:', error);
+  const box = document.getElementById('authMessage');
+  if (box) {
+    box.textContent = 'Authentication initialization error: ' + (error?.message || String(error));
+    box.className = 'notice error';
+  }
+}
 </script>
 </body>
 </html>
