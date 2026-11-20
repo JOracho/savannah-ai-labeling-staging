@@ -1,0 +1,1 @@
+This folder contains Savannah AI Labeling sample images and videos.

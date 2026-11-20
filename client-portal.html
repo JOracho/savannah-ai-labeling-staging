@@ -1,0 +1,1222 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="description" content="Secure client project portal for Savannah AI Labeling.">
+<title>Client Portal | Savannah AI Labeling</title>
+<style>
+:root{--green:#183D2B;--green2:#28563d;--gold:#C6A46A;--sand:#E9DFC9;--ivory:#F7F5EF;--ink:#1e2922;--muted:#68736b;--white:#fff}
+*{box-sizing:border-box}body{margin:0;background:var(--ivory);color:var(--ink);font:16px/1.6 Arial,Helvetica,sans-serif}
+a{color:inherit}.topbar{background:var(--green);color:#fff;padding:14px 0}.wrap{width:min(1080px,92%);margin:auto}.nav{display:flex;align-items:center;justify-content:space-between;gap:16px}.brand{display:flex;align-items:center;gap:11px;font-weight:800;text-decoration:none}.mark{display:grid;place-items:center;width:42px;height:42px;border:2px solid var(--gold);border-radius:50%;color:var(--gold);font:23px Georgia,serif}.nav a.back{color:#fff;text-decoration:none}.hero{background:var(--green);color:#fff;padding:46px 0 56px}.eyebrow{color:var(--gold);font-size:12px;font-weight:800;letter-spacing:2px;text-transform:uppercase}.hero h1{font: bold clamp(34px,5vw,54px)/1.1 Georgia,serif;margin:10px 0}.hero p{color:#e2e8e2;max-width:650px;margin:0}.main{padding:42px 0 70px}.panel{background:#fff;border:1px solid #e7e3d8;border-radius:9px;padding:26px;box-shadow:0 8px 28px #183d2b0b}.auth{max-width:520px;margin:0 auto}.tabs{display:flex;gap:8px;margin-bottom:20px}.tabs button,.btn{border:1px solid var(--gold);border-radius:4px;padding:11px 16px;font-weight:700;cursor:pointer}.tabs button{background:#fff;color:var(--green)}.tabs button.active,.btn{background:var(--gold);color:#17291d}.btn.secondary{background:#fff;color:var(--green)}label{display:block;font-size:13px;font-weight:700;margin:13px 0 5px}input{width:100%;padding:12px;border:1px solid #d7d9d2;border-radius:4px;font:inherit}button:disabled{opacity:.55;cursor:not-allowed}.hint,.muted{color:var(--muted);font-size:13px}.notice{padding:12px 14px;border-radius:5px;background:#f1eee5;margin:14px 0;font-size:14px}.notice.error{background:#fff0ed;color:#8b2f20}.notice.success{background:#edf6ed;color:#245a32}.hidden{display:none!important}.dashboard-head{display:flex;justify-content:space-between;align-items:center;gap:15px;flex-wrap:wrap;margin-bottom:22px}.dashboard-head h2{font: bold 30px Georgia,serif;color:var(--green);margin:0}.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:20px}.stat{background:#fff;border:1px solid #e7e3d8;border-radius:8px;padding:17px}.stat strong{display:block;color:var(--green);font: bold 26px Georgia,serif}.stat span{font-size:13px;color:var(--muted)}.project-list{display:grid;gap:15px}.project h3{color:var(--green);margin:0}.project-top{display:flex;justify-content:space-between;gap:15px;flex-wrap:wrap}.pill{display:inline-block;background:#f0eee7;color:#455449;padding:4px 9px;border-radius:20px;font-size:12px}.progress{height:9px;background:#ecebe4;border-radius:20px;overflow:hidden;margin:13px 0 6px}.progress span{display:block;height:100%;background:var(--green2);width:0}.tool-access{margin-top:17px;padding:16px;border:1px solid #e5ddca;border-radius:7px;background:#faf8f1}.tool-access h4{margin:0 0 5px;color:var(--green)}.tool-access p{margin:5px 0 12px;color:var(--muted);font-size:13px}.tool-link{display:inline-block;background:var(--green);color:#fff;text-decoration:none;border-radius:4px;padding:9px 14px;font-size:13px;font-weight:700}.tool-link:hover{background:var(--green2)}.annotation-stage{position:relative;width:100%;max-width:900px;margin:14px auto 0;overflow:hidden;background:#f0eee7;border:1px solid #ddd7c8;border-radius:6px}.annotation-stage img{display:block;width:100%;height:100%;object-fit:contain}.annotation-stage svg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}.annotation-preview-card{background:#fff;border:1px solid #e7e3d8;border-radius:7px;padding:16px;margin-top:14px}.annotation-preview-card h5{margin:0;color:var(--green);font-size:16px}#adminPanel select{background:#fff}#adminPanel input{display:block}#adminPanel .btn{margin-top:12px}.project-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:18px}.subpanel{background:#faf9f5;border:1px solid #ece8dd;border-radius:7px;padding:15px}.subpanel h4{margin:0 0 10px;color:var(--green)}.updates{padding-left:18px;margin:0}.updates li{margin:9px 0}.footer{background:#10291d;color:#dfe5df;padding:22px 0;font-size:13px}@media(max-width:650px){.stats{grid-template-columns:1fr}.project-grid{grid-template-columns:1fr}.panel{padding:19px}}
+</style>
+</head>
+<body>
+<header class="topbar"><div class="wrap nav"><a class="brand" href="./"><span class="mark">S</span><span>SAVANNAH AI LABELING</span></a><a class="back" href="./">← Back to website</a></div></header>
+<section class="hero"><div class="wrap"><div class="eyebrow">Secure client workspace</div><h1>Your projects. Clear progress.</h1><p>Sign in to follow project milestones, review updates and access completed deliverables from Savannah AI Labeling.</p></div></section>
+<main class="main wrap">
+<section id="authPanel" class="panel auth">
+  <div class="tabs"><button id="loginTab" class="active" type="button">Sign in</button><button id="signupTab" type="button">Create account</button></div>
+  <h2 id="authTitle" style="color:var(--green);font: bold 27px Georgia,serif;margin:0">Welcome back</h2>
+  <p class="muted" id="authIntro">Sign in to view your project dashboard.</p>
+  <form id="authForm">
+    <div id="nameField" class="hidden"><label for="fullName">Full name</label><input id="fullName" autocomplete="name"></div>
+    <label for="email">Email address</label><input id="email" type="email" autocomplete="email" required>
+    <label for="password">Password</label><input id="password" type="password" minlength="8" autocomplete="current-password" required>
+    <button class="btn" id="authSubmit" type="submit" style="margin-top:18px">Sign in</button>
+  </form>
+  <div id="authMessage" class="notice hidden" role="status"></div>
+  <p id="forgotPasswordLink" class="hint"><a href="password-recovery.html" style="color:var(--green);font-weight:700">Forgot password?</a></p>
+  <p class="hint">Use the email address associated with your Savannah AI Labeling account. If you are new, create an account first.</p>
+</section>
+<section id="dashboard" class="hidden">
+  <div class="dashboard-head"><div><div class="eyebrow" id="dashboardEyebrow">Client dashboard</div><h2 id="welcomeTitle">Your projects</h2><p class="muted" id="welcomeEmail"></p></div><button class="btn secondary" id="signOut" type="button">Sign out</button></div>
+  <div class="stats" id="dashboardStats"><div class="stat"><strong id="totalProjects">0</strong><span>Total projects</span></div><div class="stat"><strong id="activeProjects">0</strong><span>Active projects</span></div><div class="stat"><strong id="completedProjects">0</strong><span>Completed projects</span></div></div>
+  <div id="dashboardMessage" class="notice hidden" role="status"></div>
+  <section id="teamLeadPanel" class="panel hidden" style="margin-bottom:22px"><div class="eyebrow">Savannah operations</div><h2 style="color:var(--green);font: bold 26px Georgia,serif;margin:8px 0">Team lead workspace</h2><p class="muted">Only assignments explicitly allocated to your team lead account are shown here. This workspace does not provide client account or administrator controls.</p><div id="teamLeadMessage" class="notice hidden" role="status"></div><div id="teamLeadStats" class="stats"></div><div id="teamLeadAssignments" class="project-list"><p class="muted">Loading your team assignments…</p></div></section>
+  <section id="reviewerPanel" class="panel hidden" style="margin-bottom:22px">
+    <div class="eyebrow">Savannah quality assurance</div>
+    <h2 style="color:var(--green);font: bold 26px Georgia,serif;margin:8px 0">Reviewer workspace</h2>
+    <p class="muted">Review submitted annotation assignments, confirm completion, or return work for corrections. This role cannot change client projects, accounts, or integrations.</p>
+    <div id="reviewerMessage" class="notice hidden" role="status"></div>
+    <div id="reviewerQueue" class="project-list"><p class="muted">Loading submitted assignments…</p></div>
+  </section>
+  <section id="adminPanel" class="panel hidden" style="margin-bottom:22px">
+    <div class="eyebrow">Savannah administration</div>
+    <section class="subpanel" style="margin:18px 0">
+      <h4>Create a Supervisely project</h4>
+      <p class="muted">Creates a new image project in Savannah's Supervisely workspace and adds its access link to the selected client account in this portal. Leave Client account UUID blank to create a test project under your administrator account.</p>
+      <form id="createSuperviselyForm">
+        <label for="newProjectTitle">Project title</label>
+        <input id="newProjectTitle" maxlength="120" required placeholder="e.g. Savannah Demo - Vehicle Detection">
+        <label for="newProjectService">Service type</label>
+        <select id="newProjectService" required style="width:100%;padding:12px;border:1px solid #d7d9d2;border-radius:4px;font:inherit">
+          <option value="">Choose a service</option>
+          <option>Image Annotation</option><option>Video Annotation</option><option>Bounding Box Annotation</option>
+          <option>Polygon Annotation</option><option>Semantic Segmentation</option><option>LiDAR / 3D Point Cloud Annotation</option><option>Content Moderation</option><option>LLM Data Annotation & Evaluation</option><option>RLHF / Human Preference Ranking</option>
+          <option>Object Tracking</option><option>Data Quality Assurance</option><option>Other</option>
+        </select>
+        <label for="newProjectDescription">Project description (optional)</label>
+        <textarea id="newProjectDescription" maxlength="2000" rows="3" style="width:100%;padding:12px;border:1px solid #d7d9d2;border-radius:4px;font:inherit" placeholder="Brief project scope or annotation instructions"></textarea>
+        <label for="newProjectClientId">Client account UUID (optional)</label>
+        <input id="newProjectClientId" placeholder="Leave blank for an administrator test project">
+        <button class="btn" id="createSuperviselyButton" type="submit" style="margin-top:16px">Create Supervisely project</button>
+      </form>
+      <div id="createSuperviselyMessage" class="notice hidden" role="status"></div>
+    </section>
+    <h3 style="color:var(--green);font: bold 24px Georgia,serif;margin:6px 0">Configure the client's annotation tool</h3>
+    <p class="muted">Choose whether Savannah provides the workspace or the client uses their own platform. For client-owned tools, add the platform name and secure workspace link. Only administrators can change these settings.</p>
+    <form id="workspaceForm">
+      <label for="adminProject">Client project</label>
+      <select id="adminProject" required style="width:100%;padding:12px;border:1px solid #d7d9d2;border-radius:4px;font:inherit"><option value="">Loading projects…</option></select>
+      <label for="adminAccessMode">Workspace ownership</label>
+      <select id="adminAccessMode" required style="width:100%;padding:12px;border:1px solid #d7d9d2;border-radius:4px;font:inherit">
+        <option value="managed">Savannah-managed workspace</option><option value="byot">Client-owned tool (BYOT)</option>
+      </select>
+      <label for="adminTool">Annotation platform</label>
+      <select id="adminTool" required style="width:100%;padding:12px;border:1px solid #d7d9d2;border-radius:4px;font:inherit">
+        <option value="">Select a platform</option><option value="cvat">CVAT</option><option value="supervisely">Supervisely</option><option value="other">Other platform</option><option value="none">Not assigned yet</option>
+      </select>
+      <div id="externalToolNameField" class="hidden"><label for="externalToolName">Client's platform name</label><input id="externalToolName" maxlength="100" placeholder="e.g. Labelbox, V7, Roboflow"></div>
+      <label for="adminWorkspaceUrl">Workspace URL (HTTPS)</label>
+      <input id="adminWorkspaceUrl" type="url" placeholder="https://…" autocomplete="url">
+      <p class="hint">BYOT access is granted by the client in their own platform. Savannah will not ask for or store the client's platform password or API key.</p>
+      <button class="btn" id="saveWorkspace" type="submit" style="margin-top:16px">Save workspace settings</button>
+    </form>
+    <div id="adminMessage" class="notice hidden" role="status"></div>
+    <section class="subpanel" style="margin-top:18px">
+      <h3 style="color:var(--green);font: bold 22px Georgia,serif;margin:0 0 6px">CVAT connection</h3>
+      <p class="muted">The CVAT connector is prepared in staging. It will be testable after the CVAT API token is added securely to Neon Function secrets.</p>
+      <button class="btn secondary" id="testCvatConnection" type="button">Test CVAT connection</button>
+      <div id="cvatConnectionMessage" class="notice hidden" role="status" style="margin-top:12px"></div>
+    </section>
+    <section class="subpanel" style="margin-top:18px">
+      <h3 style="color:var(--green);font: bold 22px Georgia,serif;margin:0 0 6px">CVAT LiDAR task setup</h3>
+      <p class="muted">For a point-cloud trial, create the 3D task directly in CVAT, then register its task ID, job ID and frame range in Savannah's assignment form. The old automated CVAT form only handled image uploads and is disabled for this LiDAR test.</p>
+      <p><a href="https://app.cvat.ai/" target="_blank" rel="noopener noreferrer">Open CVAT</a></p>
+      <form id="createCvatTaskForm" hidden>
+        <label for="cvatProject">Savannah test project</label>
+        <select id="cvatProject" required style="width:100%;padding:12px;border:1px solid #d7d9d2;border-radius:4px;font:inherit"></select>
+        <label for="cvatSampleImage">Sample image</label>
+        <input id="cvatSampleImage" type="file" accept="image/jpeg,image/png,image/webp" required>
+        <p class="hint">The first test task uses one label named “object”. You can change labels later when we configure the real annotation workflow.</p>
+        <button class="btn" id="createCvatTaskButton" type="submit">Create CVAT sample task</button>
+      </form>
+      <div id="createCvatTaskMessage" class="notice hidden" role="status"></div>
+    </section>
+    <section class="subpanel" style="margin-top:22px">
+      <h3 style="color:var(--green);font: bold 24px Georgia,serif;margin:0 0 6px">Client deliverables</h3>
+      <p class="muted">The Neon upload route for administrator-published deliverables is being finalized. This control is temporarily hidden in staging; approved BYOT files and managed annotation review remain separate workflows.</p>
+      <form id="deliverableUploadForm" hidden>
+        <label for="deliverableProject">Client project</label>
+        <select id="deliverableProject" required style="width:100%;padding:12px;border:1px solid #d7d9d2;border-radius:4px;font:inherit">
+          <option value="">Loading projects…</option>
+        </select>
+        <label for="deliverableFile">Choose file</label>
+        <input id="deliverableFile" type="file" accept=".tar,.tar.gz,.tgz,.zip,.json,.csv,.pdf" required>
+        <label for="deliverableDescription">Description (optional)</label>
+        <textarea id="deliverableDescription" maxlength="500" rows="2" style="width:100%;padding:12px;border:1px solid #d7d9d2;border-radius:4px;font:inherit" placeholder="e.g. Final Supervisely annotation export"></textarea>
+        <button class="btn" id="uploadDeliverableButton" type="submit" style="margin-top:16px">Upload deliverable</button>
+      </form>
+      <div id="deliverableUploadMessage" class="notice hidden" role="status"></div>
+    </section>
+    <section class="subpanel" style="margin-top:18px">
+      <h3 style="color:var(--green);font: bold 24px Georgia,serif;margin:0 0 6px">Manage annotators</h3>
+      <p class="muted">Annotators first create a Savannah account using the sign-up tab. Enter their registered email below to activate annotator access. They must sign out and back in after activation.</p>
+      <form id="promoteAnnotatorForm">
+        <label for="annotatorEmail">Annotator account email</label>
+        <input id="annotatorEmail" type="email" required placeholder="annotator@example.com">
+        <button class="btn" id="promoteAnnotatorButton" type="submit">Activate annotator account</button>
+      </form>
+      <div id="annotatorAdminMessage" class="notice hidden" role="status"></div>
+      <h4 style="margin:18px 0 8px;color:var(--green)">Activate a reviewer</h4>
+      <p class="muted">The reviewer must first create a Savannah account. Enter their registered email to grant review-only access.</p>
+      <form id="promoteReviewerForm">
+        <label for="reviewerEmail">Reviewer account email</label>
+        <input id="reviewerEmail" type="email" required placeholder="reviewer@example.com">
+        <button class="btn secondary" id="promoteReviewerButton" type="submit">Activate reviewer account</button>
+      </form>
+      <div id="reviewerAdminMessage" class="notice hidden" role="status"></div>
+      <h4 style="margin:18px 0 8px;color:var(--green)">Activate a team lead</h4><p class="muted">The team lead must first create a Savannah account. Enter their registered email to grant access to assignments allocated to them.</p><form id="promoteTeamLeadForm"><label for="teamLeadEmail">Team lead account email</label><input id="teamLeadEmail" type="email" required placeholder="teamlead@example.com"><button class="btn secondary" id="promoteTeamLeadButton" type="submit">Activate team lead account</button></form><div id="teamLeadAdminMessage" class="notice hidden" role="status"></div>
+       <h4 style="margin:18px 0 8px;color:var(--green)">Assign a project</h4>
+      <form id="assignAnnotatorForm">
+        <label for="assignmentProject">Client project</label>
+        <select id="assignmentProject" required style="width:100%;padding:12px;border:1px solid #d7d9d2;border-radius:4px;font:inherit"></select>
+        <label for="assignmentAnnotator">Annotator</label>
+        <select id="assignmentAnnotator" required style="width:100%;padding:12px;border:1px solid #d7d9d2;border-radius:4px;font:inherit"></select>
+        <label for="assignmentTeamLead">Team lead (optional)</label><select id="assignmentTeamLead" style="width:100%;padding:12px;border:1px solid #d7d9d2;border-radius:4px;font:inherit"><option value="">Not allocated to a team lead</option></select>
+         <label for="assignmentTaskReference">Task reference or task URL (optional)</label>
+        <input id="assignmentTaskReference" maxlength="500" placeholder="Task ID or direct task link inside the annotation tool">
+         <label for="assignmentCvatTaskId">CVAT task ID (optional)</label><input id="assignmentCvatTaskId" inputmode="numeric" pattern="[0-9]*" placeholder="CVAT task ID">
+         <label for="assignmentCvatJobId">CVAT job ID (optional)</label><input id="assignmentCvatJobId" inputmode="numeric" pattern="[0-9]*" placeholder="CVAT job ID">
+         <label for="assignmentCvatProjectId">CVAT project ID (optional)</label><input id="assignmentCvatProjectId" inputmode="numeric" pattern="[0-9]*" placeholder="CVAT project ID">
+         <label>CVAT frame range (optional, inclusive)</label><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><input id="assignmentFrameStart" inputmode="numeric" pattern="[0-9]*" placeholder="Start frame"><input id="assignmentFrameStop" inputmode="numeric" pattern="[0-9]*" placeholder="Stop frame"></div>
+        <button class="btn" id="saveAnnotatorAssignment" type="submit">Assign annotator to project</button>
+      </form>
+      <div id="assignmentMessage" class="notice hidden" role="status"></div>
+      <p class="hint">Workload policy: each annotator can have one active project at a time. A new project can be allocated after the current work is submitted. Submitted work may remain with the reviewer while the annotator receives another batch. Assignments grant portal visibility only; invite the annotator's individual account into the relevant annotation workspace.</p>
+    </section>
+    <section class="subpanel" style="margin-top:18px">
+      <h3 style="color:var(--green);font: bold 24px Georgia,serif;margin:0 0 6px">Assignment review</h3>
+      <p class="muted">Review work submitted by annotators. Approve completed work or request corrections.</p>
+      <div id="reviewMessage" class="notice hidden" role="status"></div>
+      <div id="reviewAssignments" class="project-list"><p class="muted">Loading submitted assignments…</p></div>
+    </section>
+    <section class="subpanel" style="margin-top:18px">
+      <h3 style="color:var(--green);font: bold 24px Georgia,serif;margin:0 0 6px">Annotation preview</h3>
+      <p class="muted">Import a saved Supervisely annotation into Savannah's private review area. The original image and annotation JSON are stored securely for administrator review.</p>
+      <form id="annotationImportForm" hidden>
+        <label for="annotationReviewProject">Savannah Supervisely project</label>
+        <select id="annotationReviewProject" required style="width:100%;padding:12px;border:1px solid #d7d9d2;border-radius:4px;font:inherit"></select>
+        <label for="annotationDatasetId">Supervisely dataset ID</label>
+        <input id="annotationDatasetId" inputmode="numeric" pattern="[0-9]+" required>
+        <label for="annotationImageId">Supervisely image ID</label>
+        <input id="annotationImageId" inputmode="numeric" pattern="[0-9]+" required>
+        <button class="btn" id="importAnnotationButton" type="submit">Import saved test annotation</button>
+        <button class="btn secondary" id="refreshAnnotationButton" type="button">Refresh preview</button>
+      </form>
+      <div id="annotationImportMessage" class="notice hidden" role="status"></div>
+      <div id="annotationPreviewList" class="project-list"><p class="muted">Choose a Supervisely project to load its imported annotations.</p></div>
+    </section>
+    <section class="subpanel" style="margin-top:18px">
+      <h3 style="color:var(--green);font: bold 24px Georgia,serif;margin:0 0 6px">CVAT annotation review</h3>
+      <p class="muted">CVAT review is prepared for registered assignments, but it still requires the CVAT API token and an end-to-end test. For the first LiDAR exercise, use the Supervisely point-cloud workflow while CVAT credentials are being configured.</p>
+      <button class="btn" id="importCvatAnnotationButton" type="button">Import saved CVAT annotation</button>
+      <button class="btn secondary" id="refreshCvatAnnotationButton" type="button">Refresh CVAT preview</button>
+      <div id="cvatAnnotationReviewMessage" class="notice hidden" role="status"></div>
+      <div id="cvatAnnotationPreview" class="project-list"><p class="muted">Import the saved CVAT annotation to display it here.</p></div>
+    </section>
+  </section>
+  <section id="annotatorDashboard" class="hidden">
+    <div class="stats" id="annotatorStats">
+      <div class="stat"><strong id="annotatorAssignedCount">0</strong><span>Assigned projects</span></div>
+      <div class="stat"><strong id="annotatorActiveCount">0</strong><span>In progress</span></div>
+      <div class="stat"><strong id="annotatorSubmittedCount">0</strong><span>Submitted for review</span></div>
+    </div>
+    <div id="annotatorMessage" class="notice hidden" role="status"></div>
+    <div id="annotatorAssignments" class="project-list"></div>
+  </section>
+  <div id="projects" class="project-list"></div>
+</section>
+</main>
+<footer class="footer"><div class="wrap">© <span id="year"></span> Savannah AI Labeling · Ground Truth. Built with Precision.</div></footer>
+<script type="module">
+import { createClient, SupabaseAuthAdapter } from 'https://esm.sh/@neondatabase/neon-js@0.9.0-beta';
+const NEON_AUTH_URL = 'https://ep-proud-frost-b9l8tcnp.neonauth.c-7.eu-central-1.aws.neon.tech/savannah_staging/auth';
+const NEON_DATA_API_URL = 'https://ep-proud-frost-b9l8tcnp.apirest.c-7.eu-central-1.aws.neon.tech/savannah_staging/rest/v1';
+const FUNCTION_URLS = {
+  'manage-annotators': 'https://br-calm-cherry-b973fs8j-savannahapi.compute.c-7.eu-central-1.aws.neon.tech/manage-annotators',
+  'byot-submissions': 'https://br-calm-cherry-b973fs8j-byotsubmissions.compute.c-7.eu-central-1.aws.neon.tech/',
+  'supervisely-annotation-review': 'https://br-calm-cherry-b973fs8j-superviselyreview.compute.c-7.eu-central-1.aws.neon.tech/',
+  'cvat-annotation-review': 'https://br-calm-cherry-b973fs8j-cvatreview.compute.c-7.eu-central-1.aws.neon.tech/',
+  'create-supervisely-project': 'https://br-calm-cherry-b973fs8j-slyproject.compute.c-7.eu-central-1.aws.neon.tech/',
+  'cvat-connection-test': 'https://br-calm-cherry-b973fs8j-cvatconnect.compute.c-7.eu-central-1.aws.neon.tech/'
+};
+const neon = createClient({ auth: { adapter: SupabaseAuthAdapter(), url: NEON_AUTH_URL }, dataApi: { url: NEON_DATA_API_URL } });
+async function callNeonFunction(url, body) {
+  const { data: sessionData, error: sessionError } = await neon.auth.getSession();
+  const token = sessionData?.session?.access_token;
+  if (sessionError || !token) return { data: null, error: new Error('Your session has expired. Sign in again.') };
+  try {
+    const response = await fetch(url, { method: 'POST', headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' }, body: JSON.stringify(body || {}) });
+    const data = await response.json().catch(() => ({}));
+    return response.ok ? { data, error: null } : { data, error: new Error(data.error || 'Savannah service request failed (' + response.status + ').') };
+  } catch (error) { return { data: null, error }; }
+}
+const supabase = {
+  from: (...args) => neon.from(...args),
+  auth: neon.auth,
+  functions: { invoke: (name, options = {}) => {
+    const url = FUNCTION_URLS[name];
+    if (!url) return Promise.resolve({ data: null, error: new Error('This service is not yet connected to Neon staging: ' + name) });
+    if (options.body instanceof FormData) return Promise.resolve({ data: null, error: new Error('This upload must use the secure signed-upload workflow.') });
+    return callNeonFunction(url, options.body);
+  }}
+};
+async function ensureNeonProfile(user) {
+  const result = await callNeonFunction('https://br-calm-cherry-b973fs8j-savannahapi.compute.c-7.eu-central-1.aws.neon.tech/profile/ensure', { full_name: user.user_metadata?.full_name || user.name || null });
+  if (result.error || !result.data?.success) throw result.error || new Error(result.data?.error || 'Unable to prepare your Savannah profile.');
+  return { ...user, app_metadata: { ...(user.app_metadata || {}), role: result.data.profile.role } };
+}
+const $ = (id) => document.getElementById(id);
+let mode = 'login';
+$('year').textContent = new Date().getFullYear();
+function message(id, text, type='') { const el=$(id); el.textContent=text; el.className='notice'+(type?' '+type:''); }
+
+async function renderQaIssues(assignment, container, viewerRole, user, refreshDashboard){
+ const {data:issues,error}=await supabase.from('qa_issues')
+  .select('id,category,severity,location_reference,description,issue_status,correction_note,created_at')
+  .eq('assignment_id',assignment.id).order('created_at',{ascending:false});
+ if(error)throw error;
+ const box=document.createElement('section');box.className='subpanel';box.style.marginTop='14px';
+ const title=document.createElement('h4');title.textContent=viewerRole==='reviewer'?'QA issue report':'QA correction requests';title.style.color='var(--green)';box.append(title);
+ if(!issues?.length){const empty=document.createElement('p');empty.className='hint';empty.textContent=viewerRole==='reviewer'?'No individual QA issues recorded yet. Add each error below before requesting rework.':'No individual QA corrections have been assigned to this task.';box.append(empty);}
+ for(const issue of issues||[]){
+  const item=document.createElement('article');item.style.background='#fff';item.style.border='1px solid #e7e3d8';item.style.borderRadius='6px';item.style.padding='12px';item.style.marginTop='10px';
+  const head=document.createElement('div');head.className='project-top';
+  const label=document.createElement('strong');label.textContent=issue.category.replaceAll('_',' ').replace(/\\b\\w/g,c=>c.toUpperCase());
+  const badge=document.createElement('span');badge.className='pill';badge.textContent=issue.severity.toUpperCase()+' · '+issue.issue_status.toUpperCase();
+  head.append(label,badge);item.append(head);
+  const desc=document.createElement('p');desc.style.margin='8px 0 4px';desc.textContent=issue.description;item.append(desc);
+  if(issue.location_reference){const loc=document.createElement('p');loc.className='hint';loc.textContent='Location / object reference: '+issue.location_reference;item.append(loc);}
+  if(issue.correction_note){const note=document.createElement('p');note.className='hint';note.textContent='Annotator response: '+issue.correction_note;item.append(note);}
+  if(viewerRole==='annotator' && issue.issue_status==='open'){
+   const form=document.createElement('form');form.style.display='grid';form.style.gap='8px';form.style.marginTop='10px';
+   const labelNote=document.createElement('label');labelNote.textContent='Explain the correction made';
+   const input=document.createElement('textarea');input.rows=2;input.maxLength=1000;input.required=true;input.placeholder='Describe how you corrected this issue…';
+   const btn=document.createElement('button');btn.type='submit';btn.className='btn secondary';btn.textContent='Mark correction complete';
+   const status=document.createElement('p');status.className='hint';form.append(labelNote,input,btn,status);
+   form.addEventListener('submit',async ev=>{ev.preventDefault();btn.disabled=true;try{
+    const {data:updated,error:updateError}=await supabase.from('qa_issues').update({issue_status:'corrected',correction_note:input.value.trim(),resolved_at:new Date().toISOString()}).eq('id',issue.id).eq('issue_status','open').select('id').maybeSingle();
+    if(updateError)throw updateError;if(!updated)throw new Error('This issue has changed. Refresh your dashboard and try again.');
+    await refreshDashboard();
+   }catch(err){status.textContent=err.message||'Unable to save correction.';btn.disabled=false;}
+   });
+   item.append(form);
+  }else if(viewerRole==='reviewer' && issue.issue_status==='corrected'){
+   const btn=document.createElement('button');btn.type='button';btn.className='btn secondary';btn.textContent='Verify correction';
+   btn.addEventListener('click',async()=>{btn.disabled=true;try{
+    const {data:updated,error:updateError}=await supabase.from('qa_issues').update({issue_status:'verified',verified_at:new Date().toISOString()}).eq('id',issue.id).eq('issue_status','corrected').select('id').maybeSingle();
+    if(updateError)throw updateError;if(!updated)throw new Error('This issue has changed. Refresh the review queue.');
+    await refreshDashboard();
+   }catch(err){message('reviewerMessage',err.message||'Unable to verify correction.','error');btn.disabled=false;}
+   });
+   item.append(btn);
+  }
+  box.append(item);
+ }
+ if(viewerRole==='reviewer'){
+  const form=document.createElement('form');form.style.display='grid';form.style.gap='8px';form.style.marginTop='14px';
+  const categoryLabel=document.createElement('label');categoryLabel.textContent='Error category';
+  const category=document.createElement('select');category.required=true;category.style.cssText='width:100%;padding:10px;border:1px solid #d7d9d2;border-radius:4px;font:inherit';
+  for(const [value,label] of [['missing_label','Missing label'],['incorrect_class','Incorrect class'],['bounding_box','Bounding box / cuboid'],['segmentation','Segmentation'],['tracking','Object tracking'],['geometry','Geometry / alignment'],['format','Format / export'],['other','Other']]){const option=document.createElement('option');option.value=value;option.textContent=label;category.append(option);}
+  const severityLabel=document.createElement('label');severityLabel.textContent='Severity';
+  const severity=document.createElement('select');severity.style.cssText=category.style.cssText;for(const value of ['minor','major','critical']){const option=document.createElement('option');option.value=value;option.textContent=value.charAt(0).toUpperCase()+value.slice(1);severity.append(option);}
+  const locationLabel=document.createElement('label');locationLabel.textContent='Object, frame or file reference (optional)';
+  const location=document.createElement('input');location.maxLength=160;location.placeholder='e.g. Frame 12, Car 03, point cloud segment B';location.style.cssText='width:100%;padding:10px;border:1px solid #d7d9d2;border-radius:4px;font:inherit';
+  const descriptionLabel=document.createElement('label');descriptionLabel.textContent='Describe the error and required correction';
+  const description=document.createElement('textarea');description.rows=3;description.maxLength=2000;description.required=true;description.placeholder='Explain what is wrong and what the annotator must change…';description.style.cssText='width:100%;padding:10px;border:1px solid #d7d9d2;border-radius:4px;font:inherit';
+  const add=document.createElement('button');add.type='submit';add.className='btn';add.textContent='Add QA issue';
+  const status=document.createElement('p');status.className='hint';
+  form.append(categoryLabel,category,severityLabel,severity,locationLabel,location,descriptionLabel,description,add,status);
+  form.addEventListener('submit',async ev=>{ev.preventDefault();add.disabled=true;status.textContent='Saving QA issue…';try{
+   if(!assignment.projectId||!assignment.annotatorId)throw new Error('Assignment details are incomplete. Refresh the review queue.');
+   const {data:created,error:createError}=await supabase.from('qa_issues').insert({assignment_id:assignment.id,project_id:assignment.projectId,annotator_user_id:assignment.annotatorId,reviewer_user_id:user.id,category:category.value,severity:severity.value,location_reference:location.value.trim()||null,description:description.value.trim()}).select('id').single();
+   if(createError)throw createError;if(!created)throw new Error('The QA issue was not saved.');
+   await refreshDashboard();
+  }catch(err){status.textContent=err.message||'Unable to save QA issue.';add.disabled=false;}
+  });
+  box.append(form);
+ }
+ container.append(box);
+}
+function setMode(next) {
+  mode=next; $('loginTab').classList.toggle('active',mode==='login'); $('signupTab').classList.toggle('active',mode==='signup');
+  $('nameField').classList.toggle('hidden',mode!=='signup'); $('fullName').required=mode==='signup';
+  $('authTitle').textContent=mode==='login'?'Welcome back':'Create your Savannah account';
+  $('authIntro').textContent=mode==='login'?'Sign in to open your Savannah workspace.':'Register with your email to access your Savannah workspace.';
+  $('authSubmit').textContent=mode==='login'?'Sign in':'Create account';
+  $('authMessage').classList.add('hidden');
+}
+$('loginTab').addEventListener('click',()=>setMode('login'));
+$('signupTab').addEventListener('click',()=>{$('forgotPasswordLink').classList.add('hidden');});
+$('loginTab').addEventListener('click',()=>{$('forgotPasswordLink').classList.remove('hidden');});
+$('signupTab').addEventListener('click',()=>setMode('signup'));
+$('authForm').addEventListener('submit',async(e)=>{
+ e.preventDefault(); $('authSubmit').disabled=true;
+ try {
+  const email=$('email').value.trim(), password=$('password').value;
+  if(mode==='signup'){
+    const {data,error}=await supabase.auth.signUp({email,password,options:{data:{full_name:$('fullName').value.trim()},emailRedirectTo:'https://joracho.github.io/savannah-ai-labeling/client-portal.html'}});
+    if(error) throw error;
+    if(data.session){ await showDashboard(data.user); }
+    else message('authMessage','Account created. Check your email to confirm your address, then return here to sign in.','success');
+  } else {
+    const {data,error}=await supabase.auth.signInWithPassword({email,password}); if(error) throw error;
+    await showDashboard(data.user);
+  }
+ } catch(err){message('authMessage',err.message||'Unable to complete sign in.','error');}
+ finally{$('authSubmit').disabled=false;}
+});
+function labelStatus(s){return ({project_submitted:'Project submitted',data_received:'Data received',data_verified:'Data verified',annotation_in_progress:'Annotation in progress',quality_assurance:'Quality assurance',client_review:'Client review',revision_required:'Revision required',completed:'Completed',delivered:'Delivered',on_hold:'On hold'})[s]||s;}
+let adminProjects=[];
+let annotatorAccounts=[];
+let teamLeadAccounts=[];
+
+async function loadAnnotatorAccounts(){
+  const {data,error}=await supabase.functions.invoke('manage-annotators',{body:{action:'list'}});
+  if(error) throw error;
+  if(!data?.success) throw new Error(data?.error||'Unable to load annotator accounts.');
+  annotatorAccounts=data.annotators||[];
+  const select=$('assignmentAnnotator');
+  select.replaceChildren();
+  if(!annotatorAccounts.length){
+    const opt=document.createElement('option');opt.value='';opt.textContent='No active annotators yet';select.append(opt);
+    $('saveAnnotatorAssignment').disabled=true;
+    return;
+  }
+  $('saveAnnotatorAssignment').disabled=false;
+  for(const a of annotatorAccounts){
+    const opt=document.createElement('option');opt.value=a.id;
+    opt.textContent=(a.full_name?a.full_name+' · ':'')+a.email;select.append(opt);
+  }
+}
+
+$('promoteAnnotatorForm').addEventListener('submit',async(e)=>{
+  e.preventDefault();
+  const button=$('promoteAnnotatorButton');button.disabled=true;
+  try{
+    const {data,error}=await supabase.functions.invoke('manage-annotators',{body:{action:'promote',email:$('annotatorEmail').value.trim()}});
+    if(error)throw error;
+    if(!data?.success)throw new Error(data?.error||'Unable to activate this account.');
+    message('annotatorAdminMessage',data.message||'Annotator access activated. Ask the user to sign out and sign back in.','success');
+    $('annotatorEmail').value='';
+    await loadAnnotatorAccounts();
+  }catch(err){message('annotatorAdminMessage',err.message||'Unable to activate annotator access.','error');}
+  finally{button.disabled=false;}
+});
+
+$('promoteReviewerForm').addEventListener('submit',async(e)=>{
+ e.preventDefault();
+ const button=$('promoteReviewerButton');button.disabled=true;
+ try{
+  const {data,error}=await supabase.functions.invoke('manage-annotators',{body:{action:'promote_reviewer',email:$('reviewerEmail').value.trim()}});
+  if(error)throw error;
+  if(!data?.success)throw new Error(data?.error||'Unable to activate this reviewer account.');
+  message('reviewerAdminMessage',data.message||'Reviewer access activated. Ask the user to sign out and back in.','success');
+  $('reviewerEmail').value='';
+ }catch(err){message('reviewerAdminMessage',err.message||'Unable to activate reviewer access.','error');}
+ finally{button.disabled=false;}
+});
+
+
+$('promoteTeamLeadForm').addEventListener('submit',async(e)=>{
+ e.preventDefault();const button=$('promoteTeamLeadButton');button.disabled=true;
+ try{const {data,error}=await supabase.functions.invoke('manage-annotators',{body:{action:'promote_team_lead',email:$('teamLeadEmail').value.trim()}});if(error)throw error;if(!data?.success)throw new Error(data?.error||'Unable to activate team lead.');message('teamLeadAdminMessage',data.message||'Team lead access activated.','success');$('teamLeadEmail').value='';const {data:tl,error:tle}=await supabase.functions.invoke('manage-annotators',{body:{action:'list_team_leads'}});if(tle)throw tle;teamLeadAccounts=tl.team_leads||[];const ts=$('assignmentTeamLead');ts.replaceChildren();const none=document.createElement('option');none.value='';none.textContent='Not allocated to a team lead';ts.append(none);for(const lead of teamLeadAccounts){const o=document.createElement('option');o.value=lead.id;o.textContent=(lead.full_name?lead.full_name+' · ':'')+lead.email;ts.append(o);}}
+ catch(err){message('teamLeadAdminMessage',err.message||'Unable to activate team lead.','error');}finally{button.disabled=false;}
+});
+
+$('assignAnnotatorForm').addEventListener('submit',async(e)=>{
+  e.preventDefault();
+  const button=$('saveAnnotatorAssignment');button.disabled=true;
+  try{
+    const project=adminProjects.find(p=>p.id===$('assignmentProject').value);
+    const annotator=annotatorAccounts.find(a=>a.id===$('assignmentAnnotator').value);
+    if(!project||!annotator)throw new Error('Choose a project and an active annotator.');
+    const platform=project.tool_access_mode==='byot'
+      ? (project.annotation_tool==='other'?'byot':project.annotation_tool||'byot')
+      : (['supervisely','cvat'].includes((project.annotation_tool||'').toLowerCase())?project.annotation_tool.toLowerCase():'other');
+    const taskReference=$('assignmentTaskReference').value.trim();
+    const {error}=await supabase.from('project_assignments').upsert({
+      project_id:project.id,
+      annotator_user_id:annotator.id,
+      platform,
+      external_task_reference:taskReference||null,
+      external_task_id:$('assignmentCvatTaskId').value.trim()?Number($('assignmentCvatTaskId').value.trim()):null,
+      external_job_id:$('assignmentCvatJobId').value.trim()?Number($('assignmentCvatJobId').value.trim()):null,
+      external_project_id:$('assignmentCvatProjectId').value.trim()?Number($('assignmentCvatProjectId').value.trim()):null,
+      external_frame_start:$('assignmentFrameStart').value.trim()?Number($('assignmentFrameStart').value.trim()):null,
+      external_frame_stop:$('assignmentFrameStop').value.trim()?Number($('assignmentFrameStop').value.trim()):null,
+      team_lead_user_id:$('assignmentTeamLead').value||null,
+      assignment_status:'assigned'
+    },{onConflict:'project_id,annotator_user_id'});
+    if(error)throw error;
+    message('assignmentMessage','Annotator assigned successfully. Remember to invite their individual account into the annotation workspace as well.','success');
+    $('assignmentTaskReference').value='';
+    ['assignmentCvatTaskId','assignmentCvatJobId','assignmentCvatProjectId','assignmentFrameStart','assignmentFrameStop'].forEach(id=>$(id).value='');
+  }catch(err){
+    const raw=String(err.message||'');
+    const friendly=raw.includes('project_assignments_one_active_per_annotator_idx')
+      ? 'This annotator already has an active project. Wait until they submit it before assigning another project.'
+      : raw;
+    message('assignmentMessage',friendly||'Unable to assign this annotator.','error');
+  }
+  finally{button.disabled=false;}
+});
+
+async function loadAnnotatorDashboard(user){
+  $('dashboardEyebrow').textContent='Annotator workspace';
+  $('welcomeTitle').textContent='My assignments';
+  $('dashboardStats').classList.add('hidden');
+  $('projects').classList.add('hidden');
+  $('adminPanel').classList.add('hidden');
+  $('annotatorDashboard').classList.remove('hidden');
+  const {data,error}=await supabase.from('project_assignments')
+    .select('id,platform,external_task_reference,external_task_id,external_job_id,external_project_id,external_frame_start,external_frame_stop,assignment_status,assigned_at,projects(id,project_code,title,service_type,description,annotation_tool,annotation_workspace_url,tool_access_mode,external_tool_name,due_date)')
+    .eq('annotator_user_id',user.id).order('assigned_at',{ascending:false});
+  if(error)throw error;
+  const assignments=data||[];
+  $('annotatorAssignedCount').textContent=assignments.length;
+  $('annotatorActiveCount').textContent=assignments.filter(a=>['accepted','in_progress','rework'].includes(a.assignment_status)).length;
+  $('annotatorSubmittedCount').textContent=assignments.filter(a=>['submitted','review','approved'].includes(a.assignment_status)).length;
+  const root=$('annotatorAssignments');root.replaceChildren();
+  if(!assignments.length){
+    const empty=document.createElement('article');empty.className='panel';
+    const h=document.createElement('h3');h.textContent='No assignments yet';h.style.color='var(--green)';
+    const p=document.createElement('p');p.className='muted';p.textContent='When Savannah assigns you to a project, it will appear here with its instructions and workspace access.';
+    empty.append(h,p);root.append(empty);return;
+  }
+  for(const assignment of assignments){
+    const project=Array.isArray(assignment.projects)?assignment.projects[0]:assignment.projects;
+    if(!project)continue;
+    const card=document.createElement('article');card.className='panel project';
+    const top=document.createElement('div');top.className='project-top';
+    const details=document.createElement('div');
+    const h=document.createElement('h3');h.textContent=project.title;h.style.color='var(--green)';
+    const meta=document.createElement('p');meta.className='muted';meta.textContent=(project.project_code?project.project_code+' · ':'')+(project.service_type||'Annotation project');
+    details.append(h,meta);
+    const status=document.createElement('span');status.className='pill';status.textContent=assignment.assignment_status.replaceAll('_',' ');
+    top.append(details,status);card.append(top);
+    const desc=document.createElement('p');desc.textContent=project.description||'Follow the project instructions provided by Savannah.';card.append(desc);
+    const info=document.createElement('p');info.className='muted';
+    info.textContent='Tool: '+(assignment.platform==='other'?'Client-provided tool':assignment.platform.toUpperCase())+
+      (project.due_date?' · Due: '+new Date(project.due_date+'T00:00:00').toLocaleDateString():'')+
+      (assignment.external_task_reference?' · Task: '+assignment.external_task_reference:'');
+    card.append(info);
+    await renderQaIssues({id:assignment.id,projectId:project.id,annotatorId:user.id},card,'annotator',user,()=>loadAnnotatorDashboard(user));
+    const taskReference=(assignment.external_task_reference||'').trim();
+    if(taskReference){
+      try{
+        const taskUrl=new URL(taskReference);
+        if(taskUrl.protocol==='https:'){
+          const taskLink=document.createElement('a');taskLink.className='tool-link';taskLink.style.marginRight='8px';
+          taskLink.href=taskUrl.href;taskLink.target='_blank';taskLink.rel='noopener noreferrer';
+          taskLink.textContent='Open assigned task ↗';card.append(taskLink);
+        }else{
+          const taskNote=document.createElement('p');taskNote.className='hint';taskNote.textContent='Task reference: '+taskReference;card.append(taskNote);
+        }
+      }catch(_){
+        const taskNote=document.createElement('p');taskNote.className='hint';taskNote.textContent='Task reference: '+taskReference;card.append(taskNote);
+      }
+    }
+    const workspace=project.annotation_workspace_url;
+    if(workspace){
+      try{
+        const parsed=new URL(workspace);
+        if(parsed.protocol==='https:'){
+          const link=document.createElement('a');link.className='tool-link';link.href=parsed.href;link.target='_blank';link.rel='noopener noreferrer';link.textContent='Open annotation workspace ↗';card.append(link);
+        }
+      }catch(_){}
+    }else{
+      const note=document.createElement('p');note.className='hint';note.textContent='Workspace access is being configured. Contact your project manager.';card.append(note);
+    }
+    let nextStatus=null, actionLabel='';
+    if(assignment.assignment_status==='assigned'){nextStatus='accepted';actionLabel='Accept assignment';}
+    else if(assignment.assignment_status==='accepted'){nextStatus='in_progress';actionLabel='Start work';}
+    // Submission is handled by the verified annotation-import workflow, never by a status-only button.
+    if(nextStatus){
+      const actionButton=document.createElement('button');
+      actionButton.type='button';actionButton.className='btn secondary';actionButton.style.marginTop='14px';
+      actionButton.textContent=actionLabel;
+      actionButton.addEventListener('click',async()=>{
+        actionButton.disabled=true;
+        try{
+          const {data,error}=await supabase.functions.invoke('manage-annotators',{body:{
+            action:'update_status',assignment_id:assignment.id,assignment_status:nextStatus
+          }});
+          if(error)throw error;
+          if(!data?.success)throw new Error(data?.error||'Unable to update assignment status.');
+          message('annotatorMessage','Assignment updated: '+nextStatus.replaceAll('_',' ')+'.','success');
+          await loadAnnotatorDashboard(user);
+        }catch(err){message('annotatorMessage',err.message||'Unable to update assignment status.','error');actionButton.disabled=false;}
+      });
+      card.append(actionButton);
+    }
+if(['in_progress','rework'].includes(assignment.assignment_status) && project.tool_access_mode==='byot'){
+      const submitBox=document.createElement('div');submitBox.className='subpanel';submitBox.style.marginTop='14px';
+      const title=document.createElement('h4');title.textContent='Submit completed work';title.style.color='var(--green)';submitBox.append(title);
+      const help=document.createElement('p');help.className='hint';help.textContent='Upload your completed annotation export or agreed deliverable. Accepted formats: PDF, ZIP, TAR, TGZ, GZ, CSV and JSON. Files remain private until a Savannah reviewer approves them.';submitBox.append(help);
+      const form=document.createElement('form');form.style.display='grid';form.style.gap='8px';
+      const fl=document.createElement('label');fl.textContent='Completed deliverable files (up to 10 files)';
+      const fi=document.createElement('input');fi.type='file';fi.multiple=true;fi.required=true;fi.accept='.pdf,.zip,.tar,.tar.gz,.tgz,.gz,.csv,.json';
+      const dl=document.createElement('label');dl.textContent='Notes for the reviewer (optional)';
+      const di=document.createElement('textarea');di.rows=2;di.maxLength=1000;di.placeholder='Describe the export, completed batch, or any important notes.';
+      const btn=document.createElement('button');btn.type='submit';btn.className='btn';btn.textContent='Upload and submit for review';
+      const status=document.createElement('p');status.className='hint';status.setAttribute('role','status');
+      form.append(fl,fi,dl,di,btn,status);form.addEventListener('submit',async(ev)=>{ev.preventDefault();if(!fi.files?.length)return;btn.disabled=true;status.textContent='Uploading files securely…';try{
+        const files=Array.from(fi.files);
+         const {data:intent,error:intentError}=await supabase.functions.invoke('byot-submissions',{body:{action:'upload_intent',assignment_id:assignment.id,description:di.value.trim(),files:files.map(file=>({name:file.name,size:file.size}))}});
+         if(intentError)throw intentError;
+         for(let i=0;i<files.length;i++){const upload=intent.uploads[i];const response=await fetch(upload.upload_url,{method:'PUT',headers:upload.headers,body:files[i]});if(!response.ok)throw new Error('Upload failed for '+files[i].name+' ('+response.status+').');}
+         const {data:result,error:finalizeError}=await supabase.functions.invoke('byot-submissions',{body:{action:'finalize_upload',assignment_id:assignment.id,batch_id:intent.batch_id}});
+         if(finalizeError)throw finalizeError;if(!result?.success)throw new Error(result?.error||'Submission failed.');
+        message('annotatorMessage',result.message||'Submitted for review.','success');await loadAnnotatorDashboard(user);
+      }catch(err){status.textContent=err.message||'Unable to submit files.';btn.disabled=false;}});
+      submitBox.append(form);card.append(submitBox);
+    }
+    if(['in_progress','rework'].includes(assignment.assignment_status) && String(assignment.platform||'').toLowerCase()==='supervisely' && String(project.annotation_tool||'').toLowerCase()==='supervisely' && project.tool_access_mode!=='byot' && /(lidar|point cloud|3d)/i.test((project.service_type||'')+' '+(project.title||'')){
+      const submitBox=document.createElement('div');submitBox.className='subpanel';submitBox.style.marginTop='14px';
+      const title=document.createElement('h4');title.textContent='Submit completed Supervisely work';title.style.color='var(--green)';submitBox.append(title);
+      const pointcloud=/(lidar|point cloud|3d)/i.test((project.service_type||'')+' '+(project.title||''));
+      const help=document.createElement('p');help.className='hint';help.textContent=pointcloud?'After saving your point-cloud annotations in Supervisely, enter the dataset ID and point-cloud ID. Savannah imports the annotation JSON and source point-cloud file for reviewer access.':'After saving your labels in Supervisely, enter the dataset ID and image ID for the completed image. Savannah imports the annotation and sends this assignment to review.';submitBox.append(help);
+      const form=document.createElement('form');form.style.display='grid';form.style.gap='8px';
+      const dl=document.createElement('label');dl.textContent='Supervisely dataset ID';const di=document.createElement('input');di.inputMode='numeric';di.pattern='[0-9]+';di.required=true;di.placeholder='Dataset ID';
+      const il=document.createElement('label');il.textContent=pointcloud?'Supervisely point-cloud ID':'Supervisely image ID';const ii=document.createElement('input');ii.inputMode='numeric';ii.pattern='[0-9]+';ii.required=true;ii.placeholder=pointcloud?'Point-cloud ID':'Image ID';
+      const btn=document.createElement('button');btn.type='submit';btn.className='btn';btn.textContent='Submit annotation for review';
+      const status=document.createElement('p');status.className='hint';status.setAttribute('role','status');
+      form.append(dl,di,il,ii,btn,status);form.addEventListener('submit',async(ev)=>{ev.preventDefault();btn.disabled=true;status.textContent='Importing your saved annotation…';try{
+        const pointcloud=/(lidar|point cloud|3d)/i.test((project.service_type||'')+' '+(project.title||''));
+         const {data:result,error:invokeError}=await supabase.functions.invoke('supervisely-annotation-review',{body:{action:'submit',assignment_id:assignment.id,project_id:project.id,media_type:pointcloud?'pointcloud':'image',external_dataset_id:di.value.trim(),external_image_id:ii.value.trim(),external_project_id:String(project.annotation_workspace_url||'').split('/projects/')[1]?.split('/')[0]}});
+         if(invokeError)throw invokeError;if(!result?.success)throw new Error(result?.error||'Submission failed.');status.textContent=result.message||'Submitted for review.';await loadAnnotatorDashboard(user);
+      }catch(err){status.textContent=err.message||'Unable to submit annotation.';btn.disabled=false;}});
+      submitBox.append(form);card.append(submitBox);
+    }
+    root.append(card);
+  }
+}
+async function loadReviewAssignments(){
+ const root=$('reviewAssignments');root.replaceChildren();
+ const {data,error}=await supabase.from('project_assignments').select('id,annotator_user_id,assignment_status,assigned_at,projects(title,project_code,service_type,tool_access_mode,external_tool_name)').in('assignment_status',['submitted','review']).order('assigned_at',{ascending:false});
+ if(error)throw error;
+ const pending=data||[];
+ const {data:byotData,error:byotError}=await supabase.functions.invoke('byot-submissions',{body:{action:'list_queue'}});
+ if(byotError)throw byotError;
+ const byotMap=new Map((byotData?.assignments||[]).map(x=>[x.id,x]));
+ if(!pending.length){const empty=document.createElement('p');empty.className='muted';empty.textContent='No assignments are waiting for review.';root.append(empty);return;}
+ for(const item of pending){
+  if(root.querySelector('[data-assignment-id="'+item.id+'"]'))continue;
+  const project=Array.isArray(item.projects)?item.projects[0]:item.projects;
+  const isByot=project?.tool_access_mode==='byot';
+  const annotator=annotatorAccounts.find(a=>a.id===item.annotator_user_id);
+  const card=document.createElement('article');card.className='panel project';card.dataset.assignmentId=item.id;
+  const heading=document.createElement('h4');heading.style.margin='0';heading.style.color='var(--green)';heading.textContent=project?.title||'Annotation assignment';
+  const detail=document.createElement('p');detail.className='muted';detail.textContent=(annotator?.full_name?annotator.full_name+' · ':'')+(annotator?.email||'Annotator')+' · '+(project?.service_type||'Annotation')+' · '+(isByot?(project.external_tool_name||'Client-owned tool'):'Managed tool')+' · '+item.assignment_status.replaceAll('_',' ');
+  await renderQaIssues({id:item.id,projectId:project?.id||item.project_id,annotatorId:item.annotator_user_id||person.id||person.user_id},card,'reviewer',user,()=>loadReviewerDashboard(user));
+  const actions=document.createElement('div');actions.style.display='flex';actions.style.gap='10px';actions.style.flexWrap='wrap';
+  if(isByot){
+   const files=byotMap.get(item.id)?.submissions||[];
+   const fileBox=document.createElement('div');fileBox.className='subpanel';fileBox.style.marginTop='10px';
+   const fh=document.createElement('h4');fh.textContent='Submitted deliverables';fileBox.append(fh);
+   if(!files.length){const note=document.createElement('p');note.className='hint';note.textContent='No pending BYOT files were returned for this assignment.';fileBox.append(note);}
+   for(const file of files){const row=document.createElement('p');const link=document.createElement('a');link.href=file.download_url;link.target='_blank';link.rel='noopener noreferrer';link.textContent='Download '+file.file_name;row.append(link);const meta=document.createElement('small');meta.className='hint';meta.textContent=' · '+Math.max(1,Math.round(Number(file.file_size_bytes||0)/1024))+' KB';row.append(meta);fileBox.append(row);}
+   card.append(heading,detail,fileBox);
+  }else{card.append(heading,detail);}
+  for(const choice of [{status:'approved',label:'Approve work'},{status:'rework',label:'Request rework'}]){
+   const button=document.createElement('button');button.type='button';button.className='btn'+(choice.status==='rework'?' secondary':'');button.textContent=choice.label;
+   button.addEventListener('click',async()=>{button.disabled=true;try{
+    const target=isByot?'byot-submissions':'manage-annotators';
+    const body=isByot?{action:'review',assignment_id:item.id,assignment_status:choice.status}:{action:'review_assignment',assignment_id:item.id,assignment_status:choice.status};
+    const {data:result,error:invokeError}=await supabase.functions.invoke(target,{body});
+    if(invokeError)throw invokeError;if(!result?.success)throw new Error(result?.error||'Unable to update this assignment.');
+    message('reviewMessage',result.message||'Review decision saved.','success');await loadReviewAssignments();
+   }catch(err){message('reviewMessage',err.message||'Unable to save the review decision.','error');button.disabled=false;}});
+   actions.append(button);
+  }
+  card.append(actions);root.append(card);
+ }
+}
+
+function svgNode(name, attrs={}) {
+  const node=document.createElementNS('http://www.w3.org/2000/svg',name);
+  for(const [key,value] of Object.entries(attrs)) node.setAttribute(key,String(value));
+  return node;
+}
+function annotationPoints(item) {
+  const geometry=item?.geometry||item||{};
+  const raw=geometry?.points?.exterior||geometry?.exterior||geometry?.points||geometry?.coordinates||[];
+  if(!Array.isArray(raw))return [];
+  return raw.filter(point=>Array.isArray(point)&&point.length>=2&&Number.isFinite(Number(point[0]))&&Number.isFinite(Number(point[1]))).map(point=>[Number(point[0]),Number(point[1])]);
+}
+function drawAnnotationOverlay(stage, image, annotation, width, height) {
+  const svg=svgNode('svg',{viewBox:'0 0 '+width+' '+height,preserveAspectRatio:'none','aria-label':'Annotation overlay'});
+  const objects=Array.isArray(annotation?.objects)?annotation.objects:(Array.isArray(annotation?.labels)?annotation.labels:[]);
+  objects.forEach((item,index)=>{
+    const geometry=item?.geometry||item||{};
+    const type=String(item?.geometryType||geometry?.type||geometry?.geometryType||'').toLowerCase();
+    const points=annotationPoints(item);
+    const color='#D2A84B';
+    let shape=null;
+    if((type.includes('rectangle')||type.includes('bbox')||points.length===2)&&points.length>=2){
+      const xs=points.map(p=>p[0]),ys=points.map(p=>p[1]);
+      shape=svgNode('rect',{x:Math.min(...xs),y:Math.min(...ys),width:Math.max(...xs)-Math.min(...xs),height:Math.max(...ys)-Math.min(...ys),fill:'rgba(210,168,75,0.08)',stroke:color,'stroke-width':Math.max(2,width/500)});
+    }else if(points.length>=3){
+      shape=svgNode('polygon',{points:points.map(p=>p.join(',')).join(' '),fill:'rgba(210,168,75,0.08)',stroke:color,'stroke-width':Math.max(2,width/500)});
+    }
+    if(!shape)return;
+    svg.append(shape);
+    const label=String(item?.classTitle||item?.className||item?.objClassName||item?.class?.title||item?.title||('Object '+(index+1)));
+    const x=points.length?Math.min(...points.map(p=>p[0])):0;
+    const y=points.length?Math.min(...points.map(p=>p[1])):0;
+    const text=svgNode('text',{x:x+4,y:Math.max(18,y-5),fill:'#183D2B','font-size':Math.max(14,width/65),'font-weight':'700','paint-order':'stroke','stroke':'#F7F5EF','stroke-width':Math.max(3,width/300),'stroke-linejoin':'round'});
+    text.textContent=label;
+    svg.append(text);
+  });
+  stage.append(image,svg);
+}
+async function loadAnnotationReview() {
+  const root=$('annotationPreviewList');root.replaceChildren();
+  const note=document.createElement('p');note.className='muted';note.textContent='LiDAR annotation previews appear in the reviewer queue after an annotator submits a point-cloud assignment.';root.append(note);
+}
+$('annotationImportForm').addEventListener('submit',async(e)=>{
+  e.preventDefault();
+  const button=$('importAnnotationButton');button.disabled=true;
+  try{
+    const projectId=$('annotationReviewProject').value;
+    const project=adminProjects.find(p=>p.id===projectId);
+    if(!project)throw new Error('Choose a valid Savannah Supervisely project.');
+    const externalProjectId=String(project.annotation_workspace_url||'').split('/projects/')[1]?.split('/')[0];
+    if(!externalProjectId||!/^[0-9]+$/.test(externalProjectId))throw new Error('The selected project does not have a valid Supervisely workspace link.');
+    const {data,error}=await supabase.functions.invoke('supervisely-annotation-review',{body:{
+      action:'import',project_id:projectId,external_project_id:externalProjectId,
+      media_type:/(lidar|point cloud|3d)/i.test((project.service_type||'')+' '+(project.title||''))?'pointcloud':'image',
+      external_dataset_id:$('annotationDatasetId').value.trim(),
+      external_image_id:$('annotationImageId').value.trim()
+    }});
+    if(error)throw error;
+    if(!data?.success)throw new Error(data?.error||'Unable to import the annotation.');
+    message('annotationImportMessage',data.message||'Annotation imported successfully.','success');
+    await loadAnnotationReview();
+  }catch(err){message('annotationImportMessage',err.message||'Unable to import the annotation.','error');}
+  finally{button.disabled=false;}
+});
+$('refreshAnnotationButton').addEventListener('click',async()=>{
+  const button=$('refreshAnnotationButton');button.disabled=true;
+  try{await loadAnnotationReview();message('annotationImportMessage','Annotation preview refreshed.','success');}
+  catch(err){message('annotationImportMessage',err.message||'Unable to refresh the preview.','error');}
+  finally{button.disabled=false;}
+});
+$('annotationReviewProject').addEventListener('change',async()=>{
+  try{await loadAnnotationReview();}catch(err){message('annotationImportMessage',err.message||'Unable to load annotation preview.','error');}
+});
+
+
+function drawCvatAnnotationOverlay(stage, annotation, width, height) {
+  const svg=svgNode('svg',{viewBox:'0 0 '+width+' '+height,preserveAspectRatio:'none','aria-label':'CVAT annotation overlay'});
+  const shapes=Array.isArray(annotation?.shapes)?annotation.shapes:[];
+  shapes.forEach((shape,index)=>{
+    const values=Array.isArray(shape?.points)?shape.points.map(Number):[];
+    if(values.length<4||values.some(v=>!Number.isFinite(v)))return;
+    const type=String(shape.type||'').toLowerCase();
+    const color='#C6A46A';
+    let node=null;
+    if(type==='rectangle'||type==='ellipse'){
+      const x1=Math.min(values[0],values[2]),y1=Math.min(values[1],values[3]);
+      const x2=Math.max(values[0],values[2]),y2=Math.max(values[1],values[3]);
+      node=type==='ellipse'
+        ?svgNode('ellipse',{cx:(x1+x2)/2,cy:(y1+y2)/2,rx:(x2-x1)/2,ry:(y2-y1)/2,fill:'rgba(198,164,106,.08)',stroke:color,'stroke-width':Math.max(2,width/500)})
+        :svgNode('rect',{x:x1,y:y1,width:x2-x1,height:y2-y1,fill:'rgba(198,164,106,.08)',stroke:color,'stroke-width':Math.max(2,width/500)});
+    }else if(['polygon','polyline','points'].includes(type)&&values.length>=6){
+      const coords=[];for(let i=0;i+1<values.length;i+=2)coords.push([values[i],values[i+1]]);
+      node=svgNode(type==='polyline'?'polyline':'polygon',{points:coords.map(p=>p.join(',')).join(' '),fill:type==='polyline'?'none':'rgba(198,164,106,.08)',stroke:color,'stroke-width':Math.max(2,width/500)});
+    }
+    if(!node)return;
+    svg.append(node);
+    const label='Label '+(shape.label_id??(index+1));
+    const x=values[0],y=values[1];
+    const text=svgNode('text',{x:x+4,y:Math.max(18,y-5),fill:'#183D2B','font-size':Math.max(14,width/65),'font-weight':'700','paint-order':'stroke','stroke':'#F7F5EF','stroke-width':Math.max(3,width/300),'stroke-linejoin':'round'});
+    text.textContent=label;svg.append(text);
+  });
+  stage.append(svg);
+}
+async function importCvatAnnotationPreview() {
+  const root=$('cvatAnnotationPreview');root.replaceChildren();
+  const note=document.createElement('p');note.className='muted';note.textContent='CVAT previews are loaded from the reviewer queue after an annotator submits an assigned task or job.';root.append(note);
+  message('cvatAnnotationReviewMessage','Choose a submitted CVAT assignment in the reviewer queue to inspect its saved annotations.','success');
+  return;
+  const {data,error}=await supabase.functions.invoke('cvat-annotation-review',{body:{}});
+  const annotation=data.annotation_json||{};
+  const shapes=Array.isArray(annotation.shapes)?annotation.shapes:[];
+  const tags=Array.isArray(annotation.tags)?annotation.tags:[];
+  const tracks=Array.isArray(annotation.tracks)?annotation.tracks:[];
+  const card=document.createElement('article');card.className='annotation-preview-card';
+  const heading=document.createElement('h5');heading.textContent='strt.jpg · CVAT Task #'+data.task_id;
+  const detail=document.createElement('p');detail.className='muted';
+  detail.textContent=shapes.length+' shape(s) · '+tags.length+' tag(s) · '+tracks.length+' track(s) · Imported '+new Date(data.annotation_record.imported_at).toLocaleString();
+  const width=Number(data.annotation_record.image_width)||626;
+  const height=Number(data.annotation_record.image_height)||417;
+  const stage=document.createElement('div');stage.className='annotation-stage';stage.style.aspectRatio=width+'/'+height;
+  const img=document.createElement('img');img.src=data.image_url;img.alt='CVAT sample image with saved annotations';img.loading='lazy';
+  img.addEventListener('load',()=>drawCvatAnnotationOverlay(stage,annotation,width,height),{once:true});
+  stage.append(img);
+  card.append(heading,detail,stage);root.append(card);
+  message('cvatAnnotationReviewMessage',data.message+' '+shapes.length+' shape(s) imported.','success');
+}
+$('importCvatAnnotationButton').addEventListener('click',async()=>{
+  const button=$('importCvatAnnotationButton');button.disabled=true;
+  message('cvatAnnotationReviewMessage','Importing the saved annotation and sample image from CVAT…');
+  try{await importCvatAnnotationPreview();}
+  catch(err){message('cvatAnnotationReviewMessage',err.message||'CVAT annotation import failed.','error');}
+  finally{button.disabled=false;}
+});
+$('refreshCvatAnnotationButton').addEventListener('click',async()=>{
+  const button=$('refreshCvatAnnotationButton');button.disabled=true;
+  try{await importCvatAnnotationPreview();}
+  catch(err){message('cvatAnnotationReviewMessage',err.message||'Unable to refresh the CVAT preview.','error');}
+  finally{button.disabled=false;}
+});
+
+let currentPortalUser = null;
+$('createSuperviselyForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const button = $('createSuperviselyButton');
+  button.disabled = true;
+  $('createSuperviselyMessage').classList.add('hidden');
+  try {
+    const payload = {
+      title: $('newProjectTitle').value.trim(),
+      service_type: $('newProjectService').value,
+      description: $('newProjectDescription').value.trim(),
+      client_user_id: $('newProjectClientId').value.trim() || undefined
+    };
+    const { data, error } = await supabase.functions.invoke('create-supervisely-project', { body: payload });
+    if (error) throw error;
+    if (!data?.success) throw new Error(data?.error || 'The project could not be created.');
+    message('createSuperviselyMessage', 'Supervisely project created and linked to the client portal. Project ID: ' + data.supervisely_project_id, 'success');
+    $('newProjectTitle').value = '';
+    $('newProjectService').value = '';
+    $('newProjectDescription').value = '';
+    $('newProjectClientId').value = '';
+    await loadAdminPanel();
+    if (currentPortalUser && currentPortalUser.id === (payload.client_user_id || currentPortalUser.id)) {
+      await showDashboard(currentPortalUser,true);
+    }
+  } catch (err) {
+    message('createSuperviselyMessage', err.message || 'Unable to create the Supervisely project.', 'error');
+  } finally {
+    button.disabled = false;
+  }
+});
+$('testCvatConnection').addEventListener('click', async () => {
+  const button = $('testCvatConnection');
+  button.disabled = true;
+  $('cvatConnectionMessage').classList.add('hidden');
+  try {
+    const { data, error } = await supabase.functions.invoke('cvat-connection-test', { body: {} });
+    if (error) throw error;
+    if (!data?.success || !data?.connected) throw new Error(data?.error || 'CVAT connection could not be confirmed.');
+    message('cvatConnectionMessage', 'Connected successfully. CVAT currently contains ' + data.task_count + ' task(s). No tasks were changed.', 'success');
+  } catch (err) {
+    message('cvatConnectionMessage', err.message || 'Unable to connect to CVAT.', 'error');
+  } finally {
+    button.disabled = false;
+  }
+});
+
+$('createCvatTaskForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const button = $('createCvatTaskButton');
+  const projectId = $('cvatProject').value;
+  const file = $('cvatSampleImage').files?.[0];
+  if (!projectId || !file) {
+    message('createCvatTaskMessage', 'Choose a test project and one sample image.', 'error');
+    return;
+  }
+  if (file.size > 20 * 1024 * 1024) {
+    message('createCvatTaskMessage', 'The sample image must be smaller than 20 MB.', 'error');
+    return;
+  }
+  button.disabled = true;
+  message('createCvatTaskMessage', 'Creating the CVAT task and uploading the sample image securely…');
+  try {
+    const form = new FormData();
+    form.append('project_id', projectId);
+    form.append('image', file, file.name);
+    const { data, error } = await supabase.functions.invoke('create-cvat-task', { body: form });
+    if (error) throw error;
+    if (!data?.success || !data?.task_url) throw new Error(data?.error || 'CVAT did not confirm task creation.');
+    const project = adminProjects.find(p => p.id === projectId);
+    if (project) {
+      project.annotation_tool = 'cvat';
+      project.annotation_workspace_url = data.task_url;
+    }
+    if ($('adminProject').value === projectId) fillWorkspaceFields();
+    $('cvatProject').value = '';
+    $('cvatSampleImage').value = '';
+    const link = document.createElement('a');
+    link.href = data.task_url;
+    link.target = '_blank';
+    link.rel = 'noopener noreferrer';
+    link.textContent = 'Open CVAT sample task ↗';
+    link.className = 'tool-link';
+    const output = $('createCvatTaskMessage');
+    output.textContent = 'Task created successfully (CVAT task ID: ' + data.task_id + '). ';
+    output.append(link);
+    output.className = 'notice success';
+    populateCvatProjectOptions();
+  } catch (err) {
+    message('createCvatTaskMessage', err.message || 'Unable to create the CVAT sample task.', 'error');
+  } finally {
+    button.disabled = false;
+  }
+});
+
+function populateCvatProjectOptions() {
+  const select = $('cvatProject');
+  select.replaceChildren();
+  const available = adminProjects.filter(p =>
+    (!p.annotation_tool || String(p.annotation_tool).toLowerCase() === 'cvat') &&
+    !p.annotation_workspace_url
+  );
+  if (!available.length) {
+    const option = document.createElement('option');
+    option.value = '';
+    option.textContent = 'No unassigned test projects available';
+    select.append(option);
+    select.disabled = true;
+    $('createCvatTaskButton').disabled = true;
+    return;
+  }
+  const placeholder = document.createElement('option');
+  placeholder.value = '';
+  placeholder.textContent = 'Choose a test project';
+  select.append(placeholder);
+  for (const p of available) {
+    const option = document.createElement('option');
+    option.value = p.id;
+    option.textContent = (p.project_code ? p.project_code + ' · ' : '') + p.title;
+    select.append(option);
+  }
+  select.disabled = false;
+  $('createCvatTaskButton').disabled = false;
+}
+
+async function loadAdminPanel(){
+ $('adminPanel').classList.remove('hidden');
+ const select=$('adminProject');select.replaceChildren();
+ const placeholder=document.createElement('option');placeholder.value='';placeholder.textContent='Loading projects…';select.append(placeholder);
+ const {data,error}=await supabase.from('projects').select('id,project_code,title,client_user_id,service_type,description,annotation_tool,annotation_workspace_url,tool_access_mode,external_tool_name,status,progress_percent,due_date,created_at').order('created_at',{ascending:false});
+ if(error) throw error;
+ adminProjects=data||[];
+ populateCvatProjectOptions();
+ const annotationProjectSelect=$('annotationReviewProject');
+ annotationProjectSelect.replaceChildren();
+ const superviselyProjects=adminProjects.filter(p=>String(p.annotation_tool||'').toLowerCase()==='supervisely'&&String(p.annotation_workspace_url||'').includes('/projects/'));
+ if(superviselyProjects.length){
+   for(const p of superviselyProjects){const opt=document.createElement('option');opt.value=p.id;opt.textContent=(p.project_code?p.project_code+' · ':'')+p.title;annotationProjectSelect.append(opt);}
+   annotationProjectSelect.disabled=false;$('importAnnotationButton').disabled=false;
+ }else{
+   const opt=document.createElement('option');opt.value='';opt.textContent='No Supervisely projects available';annotationProjectSelect.append(opt);
+   annotationProjectSelect.disabled=true;$('importAnnotationButton').disabled=true;
+ }
+ const assignmentProject=$('assignmentProject');
+ assignmentProject.replaceChildren();
+ if(adminProjects.length){
+   for(const p of adminProjects){const opt=document.createElement('option');opt.value=p.id;opt.textContent=(p.project_code?p.project_code+' · ':'')+p.title;assignmentProject.append(opt);}
+ }else{
+   const opt=document.createElement('option');opt.value='';opt.textContent='No projects available';assignmentProject.append(opt);
+ }
+ try{await loadAnnotatorAccounts();}catch(err){message('annotatorAdminMessage','Unable to load annotators: '+err.message,'error');}
+ try{await loadReviewAssignments();}catch(err){message('reviewMessage','Unable to load submitted assignments: '+err.message,'error');}
+ const deliverableSelect=$('deliverableProject');
+ deliverableSelect.replaceChildren();
+ if(adminProjects.length){
+   $('uploadDeliverableButton').disabled=false;
+   for(const p of adminProjects){const opt=document.createElement('option');opt.value=p.id;opt.textContent=(p.project_code?p.project_code+' · ':'')+p.title;deliverableSelect.append(opt);}
+   deliverableSelect.value=adminProjects[0].id;
+ } else {
+   const emptyOpt=document.createElement('option');emptyOpt.value='';emptyOpt.textContent='No projects available';deliverableSelect.append(emptyOpt);
+   $('uploadDeliverableButton').disabled=true;
+ }
+ select.replaceChildren();
+ if(!adminProjects.length){const opt=document.createElement('option');opt.value='';opt.textContent='No projects found';select.append(opt);$('saveWorkspace').disabled=true;return;}
+ $('saveWorkspace').disabled=false;
+ for(const p of adminProjects){const opt=document.createElement('option');opt.value=p.id;opt.textContent=(p.project_code?p.project_code+' · ':'')+p.title;select.append(opt);}
+ select.value=adminProjects[0].id;fillWorkspaceFields();
+ if(superviselyProjects.length){annotationProjectSelect.value=superviselyProjects.find(p=>p.title==='Savannah Integration Test')?.id||superviselyProjects[0].id;try{await loadAnnotationReview();}catch(err){message('annotationImportMessage',err.message||'Unable to load annotation preview.','error');}}
+}
+function fillWorkspaceFields(){
+ const p=adminProjects.find(x=>x.id===$('adminProject').value);if(!p)return;
+ $('adminAccessMode').value=p.tool_access_mode||'managed';
+ $('adminTool').value=p.annotation_tool||'';
+ $('externalToolName').value=p.external_tool_name||'';
+ $('externalToolNameField').classList.toggle('hidden',$('adminTool').value!=='other');
+ $('adminWorkspaceUrl').value=p.annotation_workspace_url||'';
+ $('adminMessage').classList.add('hidden');
+}
+$('adminTool').addEventListener('change',()=>{$('externalToolNameField').classList.toggle('hidden',$('adminTool').value!=='other');});
+$('adminProject').addEventListener('change',fillWorkspaceFields);
+$('workspaceForm').addEventListener('submit',async(e)=>{
+ e.preventDefault();const id=$('adminProject').value;const mode=$('adminAccessMode').value;const tool=$('adminTool').value;const rawUrl=$('adminWorkspaceUrl').value.trim();const customName=$('externalToolName').value.trim();
+ if(!id||!tool){message('adminMessage','Choose a project and an annotation platform.','error');return;}
+ if(tool==='other'&&!customName){message('adminMessage','Enter the name of the client’s annotation platform.','error');return;}
+ let url=null;
+ if(rawUrl){try{const parsed=new URL(rawUrl);if(parsed.protocol!=='https:')throw new Error();url=parsed.href;}catch(_){message('adminMessage','Enter a valid HTTPS workspace URL.','error');return;}}
+ if(mode==='byot'&&!url){message('adminMessage','Add the client-owned workspace URL before saving BYOT settings.','error');return;}
+ $('saveWorkspace').disabled=true;
+ try{
+  const update={annotation_tool:tool==='none'?null:tool,annotation_workspace_url:url,tool_access_mode:mode,external_tool_name:tool==='other'?customName:null};
+  const {data,error}=await supabase.from('projects').update(update).eq('id',id).select('id,annotation_tool,annotation_workspace_url,tool_access_mode,external_tool_name').maybeSingle();
+  if(error)throw error;if(!data)throw new Error('No project was updated. Confirm that this account has administrator access.');
+  const item=adminProjects.find(x=>x.id===id);if(item)Object.assign(item,data);
+  message('adminMessage',mode==='byot'?'BYOT settings saved. The client will see their own platform and workspace link. They must invite each Savannah team member using an individual account.':'Savannah-managed workspace settings saved.','success');
+  if(currentPortalUser)await showDashboard(currentPortalUser,true);
+ }catch(err){message('adminMessage',err.message||'Unable to save the workspace settings.','error');}
+ finally{$('saveWorkspace').disabled=false;}
+});
+$('deliverableUploadForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const button = $('uploadDeliverableButton');
+  const projectId = $('deliverableProject').value;
+  const file = $('deliverableFile').files?.[0];
+  const description = $('deliverableDescription').value.trim();
+  if (!projectId || !file) {
+    message('deliverableUploadMessage', 'Choose a project and a file before uploading.', 'error');
+    return;
+  }
+  if (file.size > 100 * 1024 * 1024) {
+    message('deliverableUploadMessage', 'This file is larger than the 100 MB limit. Please use a smaller archive.', 'error');
+    return;
+  }
+  const allowedExtensions = /\.(tar|tar\.gz|tgz|zip|json|csv|pdf)$/i;
+  if (!allowedExtensions.test(file.name)) {
+    message('deliverableUploadMessage', 'Choose a TAR, TAR.GZ, TGZ, ZIP, JSON, CSV or PDF file.', 'error');
+    button.disabled = true;
+   message('deliverableUploadMessage', 'Uploading file securely…');
+   try {
+     const {data:intent,error:intentError}=await supabase.functions.invoke('byot-submissions',{body:{action:'admin_upload_intent',project_id:projectId,file_name:file.name,file_size_bytes:file.size,mime_type:contentType}});
+     if(intentError)throw intentError;
+     const uploaded=await fetch(intent.upload_url,{method:'PUT',headers:intent.headers,body:file});
+     if(!uploaded.ok)throw new Error('File upload failed ('+uploaded.status+').');
+     const {data:saved,error:saveError}=await supabase.functions.invoke('byot-submissions',{body:{action:'admin_finalize_upload',project_id:projectId,file_name:file.name,storage_path:intent.storage_path,description}});
+     if(saveError)throw saveError;
+     if(!saved?.success)throw new Error(saved?.error||'Unable to publish the deliverable.');
+$('deliverableFile').value = '';
+    $('deliverableDescription').value = '';
+    message('deliverableUploadMessage', 'Deliverable uploaded successfully. The assigned client can now find it in the Deliverables section of their project dashboard.', 'success');
+  } catch (err) {
+     message('deliverableUploadMessage', err.message || 'Unable to upload this deliverable.', 'error');
+  } finally {
+    button.disabled = false;
+  }
+});
+
+async function loadTeamLeadDashboard(user){
+ $('dashboardEyebrow').textContent='Savannah team lead portal';
+ $('welcomeTitle').textContent='Team production dashboard';
+ $('dashboardStats').classList.add('hidden');$('projects').classList.add('hidden');$('adminPanel').classList.add('hidden');$('annotatorDashboard').classList.add('hidden');$('reviewerPanel').classList.add('hidden');$('teamLeadPanel').classList.remove('hidden');
+ const root=$('teamLeadAssignments');root.replaceChildren();
+ const {data,error}=await supabase.functions.invoke('manage-annotators',{body:{action:'list_team_workload'}});
+ if(error)throw error;
+ if(!data?.success)throw new Error(data?.error||'Unable to load team workload.');
+ const items=data.assignments||[],counts=data.counts||{};
+ const stats=$('teamLeadStats');stats.replaceChildren();
+ for(const [label,value] of [
+  ['Assigned workload',counts.total||0],
+  ['Active annotators',counts.active_annotators||0],
+  ['Awaiting start',counts.assigned||0],
+  ['In progress',counts.in_progress||0],
+  ['Submitted for review',counts.submitted||0],
+  ['Approved',counts.approved||0],
+  ['Needs rework',counts.rework||0]
+ ]){
+  const box=document.createElement('div');box.className='stat';
+  const strong=document.createElement('strong');strong.textContent=String(value);
+  const span=document.createElement('span');span.textContent=label;
+  box.append(strong,span);stats.append(box);
+ }
+ const policy=document.createElement('div');policy.className='notice';
+ policy.textContent='Workload rule: each annotator may have only one active project at a time. Active work includes assigned, accepted, in-progress and rework assignments. Submitted work is waiting for independent review and does not count as active annotator work.';
+ root.append(policy);
+ if(!items.length){
+  const empty=document.createElement('p');empty.className='muted';
+  empty.textContent='No assignments have been allocated to your team lead account yet. Ask an administrator to allocate assignments.';
+  root.append(empty);return;
+ }
+ const activeStates=['assigned','accepted','in_progress','rework'];
+ const byAnnotator=new Map();
+ for(const item of items){
+  const key=item.annotator_user_id||'unknown';
+  if(!byAnnotator.has(key))byAnnotator.set(key,[]);
+  byAnnotator.get(key).push(item);
+ }
+ const teamSummary=document.createElement('p');teamSummary.className='muted';
+ teamSummary.textContent=byAnnotator.size+' annotator(s) represented in your allocated workload.';
+ root.append(teamSummary);
+ for(const [annotatorId,assignments] of byAnnotator){
+  const person=assignments[0].annotator||{};
+  const group=document.createElement('section');group.className='subpanel';
+  group.style.marginBottom='14px';
+  const heading=document.createElement('h3');heading.style.color='var(--green)';
+  heading.textContent=person.full_name||person.email||'Assigned annotator';
+  const email=document.createElement('p');email.className='hint';email.textContent=person.email||'';
+  const activeCount=assignments.filter(a=>activeStates.includes(a.assignment_status)).length;
+  const workload=document.createElement('p');workload.className='muted';
+  workload.textContent=activeCount===0?'No active project currently.':activeCount===1?'1 active project.':'Warning: '+activeCount+' active projects. Please notify Savannah administration.';
+  group.append(heading,email,workload);
+  for(const item of assignments){
+   const project=Array.isArray(item.projects)?item.projects[0]:item.projects;
+   const card=document.createElement('article');card.className='panel project';card.style.marginTop='10px';
+   const title=document.createElement('h4');title.style.color='var(--green)';title.textContent=project?.title||'Annotation assignment';
+   const status=document.createElement('span');status.className='pill';status.textContent=String(item.assignment_status||'unknown').replaceAll('_',' ');
+   const detail=document.createElement('p');detail.className='muted';
+   detail.textContent=(project?.project_code?project.project_code+' · ':'')+(project?.service_type||'Annotation')+' · '+(item.platform||project?.annotation_tool||'Tool not specified');
+   const date=document.createElement('p');date.className='hint';
+   date.textContent='Assigned: '+(item.assigned_at?new Date(item.assigned_at).toLocaleDateString():'Date unavailable')+(project?.due_date?' · Due: '+new Date(project.due_date+'T00:00:00').toLocaleDateString():'');
+   card.append(title,status,detail,date);
+   if(item.external_task_reference){
+    const ref=document.createElement('p');ref.className='hint';ref.textContent='Task reference: '+item.external_task_reference;card.append(ref);
+   }
+   if(project?.description){
+    const description=document.createElement('p');description.textContent=project.description;card.append(description);
+   }
+   if(project?.annotation_workspace_url){
+    const link=document.createElement('a');link.href=project.annotation_workspace_url;link.target='_blank';link.rel='noopener noreferrer';link.textContent='Open annotation workspace';card.append(link);
+   }
+   group.append(card);
+  }
+  root.append(group);
+ }
+}
+
+async function loadReviewerDashboard(user){
+ $('dashboardEyebrow').textContent='Savannah reviewer portal';
+ $('welcomeTitle').textContent='Review submissions';
+ $('dashboardStats').classList.add('hidden');
+ $('projects').classList.add('hidden');
+ $('adminPanel').classList.add('hidden');
+ $('annotatorDashboard').classList.add('hidden');
+ $('reviewerPanel').classList.remove('hidden');
+ const root=$('reviewerQueue');root.replaceChildren();
+ const {data,error}=await supabase.functions.invoke('manage-annotators',{body:{action:'list_review_queue'}});
+ if(error)throw error;
+ if(!data?.success)throw new Error(data?.error||'Unable to load the review queue.');
+ const items=data.assignments||[];
+ const {data:byotData,error:byotError}=await supabase.functions.invoke('byot-submissions',{body:{action:'list_queue'}});
+ if(byotError)throw byotError;
+ const byotMap=new Map((byotData?.assignments||[]).map(x=>[x.id,x]));
+ $('totalProjects').textContent=items.length;
+ if(!items.length){const empty=document.createElement('p');empty.className='muted';empty.textContent='No submissions are waiting for review.';root.append(empty);return;}
+ for(const item of items){
+  const project=Array.isArray(item.projects)?item.projects[0]:item.projects;
+  const isByot=project?.tool_access_mode==='byot';
+  const card=document.createElement('article');card.className='panel project';
+  const heading=document.createElement('h3');heading.style.color='var(--green)';heading.textContent=project?.title||'Annotation assignment';
+  const detail=document.createElement('p');detail.className='muted';
+  const person=item.annotator||{};
+  const tool=isByot?(project.external_tool_name||project.annotation_tool||'Client-owned tool'):(project?.annotation_tool||'Tool not specified');
+  detail.textContent=(person.full_name?person.full_name+' · ':'')+(person.email||'Annotator')+' · '+(project?.service_type||'Annotation')+' · '+tool+' · '+item.assignment_status.replaceAll('_',' ');
+  card.append(heading,detail);
+  if(project?.annotation_workspace_url){
+   const link=document.createElement('a');link.href=project.annotation_workspace_url;link.target='_blank';link.rel='noopener noreferrer';link.textContent='Open annotation workspace';card.append(link);
+  }
+  if(item.external_task_reference){const ref=document.createElement('p');ref.className='hint';ref.textContent='Task reference: '+item.external_task_reference;card.append(ref);}
+  if(isByot){
+   const submission=byotMap.get(item.id);const files=submission?.submissions||[];
+   const fileBox=document.createElement('div');fileBox.className='subpanel';fileBox.style.marginTop='12px';
+   const fh=document.createElement('h4');fh.textContent='Submitted deliverables';fileBox.append(fh);
+   if(!files.length){const emptyFiles=document.createElement('p');emptyFiles.className='hint';emptyFiles.textContent='No pending BYOT files were returned for this assignment. Refresh the queue or check the submission record.';fileBox.append(emptyFiles);}
+   for(const file of files){
+    const row=document.createElement('p');row.style.margin='8px 0';
+    const a=document.createElement('a');a.href=file.download_url;a.target='_blank';a.rel='noopener noreferrer';a.textContent='Download '+file.file_name;row.append(a);
+    const meta=document.createElement('span');meta.className='hint';meta.textContent=' · '+(Math.max(1,Math.round(Number(file.file_size_bytes||0)/1024))+' KB');row.append(meta);
+    if(file.description){const note=document.createElement('small');note.className='hint';note.textContent=' · '+file.description;row.append(note);}
+    fileBox.append(row);
+   }
+   card.append(fileBox);
+  }else{
+   const preview=document.createElement('div');preview.style.marginTop='12px';preview.textContent='Loading linked annotation preview…';card.append(preview);
+   try{
+    const reviewFunction=project?.annotation_tool==='cvat'?'cvat-annotation-review':'supervisely-annotation-review';
+     const {data:pd,error:pe}=await supabase.functions.invoke(reviewFunction,{body:{action:'list_assignment_annotations',assignment_id:item.id}});
+    if(pe)throw pe;if(!pd?.success)throw new Error(pd?.error||'Preview unavailable.');preview.replaceChildren();const anns=pd.annotations||[];
+    if(!anns.length){const note=document.createElement('p');note.className='hint';note.textContent='No annotation imports are linked to this submitted assignment yet.';preview.append(note);}
+    for(const ann of anns){const cap=document.createElement('p');cap.className='hint';cap.textContent=(ann.image_name||'Submitted media')+' · '+(ann.label_count||0)+' labels';if(ann.media_type==='pointcloud'){const link=document.createElement('a');link.href=ann.image_url;link.target='_blank';link.rel='noopener noreferrer';link.textContent='Download submitted point cloud';preview.append(cap,link);continue;}const stage=document.createElement('div');stage.className='annotation-stage';const w=Number(ann.image_width)||Number(ann.annotation_json?.size?.width)||1;const ht=Number(ann.image_height)||Number(ann.annotation_json?.size?.height)||1;stage.style.aspectRatio=w+'/'+ht;const img=document.createElement('img');img.src=ann.image_url;img.alt=ann.image_name||'Submitted annotation';img.loading='lazy';img.addEventListener('load',()=>drawAnnotationOverlay(stage,img,ann.annotation_json||{},w,ht),{once:true});stage.append(img);preview.append(cap,stage);}
+   }catch(previewErr){preview.textContent='Preview unavailable: '+(previewErr.message||'Unable to load linked annotation.');}
+  }
+  const actions=document.createElement('div');actions.style.display='flex';actions.style.gap='10px';actions.style.flexWrap='wrap';
+  for(const choice of [{status:'approved',label:'Approve work'},{status:'rework',label:'Request rework'}]){
+   const button=document.createElement('button');button.type='button';button.className='btn'+(choice.status==='rework'?' secondary':'');button.textContent=choice.label;
+   button.addEventListener('click',async()=>{
+    button.disabled=true;
+    try{
+     const actionBody=isByot?{action:'review',assignment_id:item.id,assignment_status:choice.status}:{action:'review_assignment',assignment_id:item.id,assignment_status:choice.status};
+     const {data:result,error:invokeError}=await supabase.functions.invoke(isByot?'byot-submissions':'manage-annotators',{body:actionBody});
+     if(invokeError)throw invokeError;
+     if(!result?.success)throw new Error(result?.error||'Unable to save the review decision.');
+     message('reviewerMessage',result.message||'Review decision saved.','success');
+     await loadReviewerDashboard(user);
+    }catch(err){message('reviewerMessage',err.message||'Unable to save the review decision.','error');button.disabled=false;}
+   });
+   actions.append(button);
+  }
+  card.append(actions);root.append(card);
+ }
+}
+
+async function showDashboard(user, forceRefresh=false){
+  user = await ensureNeonProfile(user);
+  const portalMode=new URLSearchParams(window.location.search).get('portal');
+ const userRole=user.app_metadata?.role||'client';
+ const expectedRoles={client:['client'],annotator:['annotator'],admin:['admin'],reviewer:['reviewer','admin'],teamlead:['team_lead']};
+ if(portalMode && expectedRoles[portalMode] && !expectedRoles[portalMode].includes(userRole)){
+   currentPortalUser=null;
+   $('dashboard').classList.add('hidden');$('authPanel').classList.remove('hidden');
+   $('authIntro').textContent='This account does not have access to the '+portalMode+' portal. Sign in with an account assigned to that role.';
+   message('authMessage','Access denied. Your account role is '+userRole+'. Please use the correct Savannah portal.','error');
+   return;
+ }
+ if(!forceRefresh && currentPortalUser?.id===user.id && !$('dashboard').classList.contains('hidden')) return;
+ currentPortalUser = user;
+ $('authPanel').classList.add('hidden'); $('dashboard').classList.remove('hidden');
+ $('welcomeTitle').textContent='Your projects'; $('welcomeEmail').textContent=user.email||'';
+ const isAdmin=user.app_metadata?.role==='admin';
+ const isAnnotator=user.app_metadata?.role==='annotator';
+ const isReviewer=user.app_metadata?.role==='reviewer';
+ const isTeamLead=user.app_metadata?.role==='team_lead';
+ $('reviewerPanel').classList.add('hidden');
+ $('teamLeadPanel').classList.add('hidden');
+ $('dashboardEyebrow').textContent=isAdmin?'Savannah administration':'Client dashboard';
+ $('dashboardStats').classList.remove('hidden');$('projects').classList.remove('hidden');$('annotatorDashboard').classList.add('hidden');
+ if(isAnnotator){await loadAnnotatorDashboard(user);return;}
+ if(isReviewer){await loadReviewerDashboard(user);return;}
+ if(isTeamLead){await loadTeamLeadDashboard(user);return;}
+ if(isAdmin){try{await loadAdminPanel();}catch(e){message('adminMessage','Unable to load admin projects: '+e.message,'error');}}
+ else {$('adminPanel').classList.add('hidden');}
+ let list=[];
+ if(isAdmin){
+   list=adminProjects;
+ }else{
+   const {data:projects,error}=await supabase.from('projects').select('id,project_code,title,service_type,description,annotation_tool,annotation_workspace_url,tool_access_mode,external_tool_name,status,progress_percent,due_date,created_at').eq('client_user_id',user.id).order('created_at',{ascending:false});
+   if(error) throw error;
+   list=projects||[];
+ }
+ $('totalProjects').textContent=list.length;
+ $('activeProjects').textContent=list.filter(p=>!['completed','delivered','on_hold'].includes(p.status)).length;
+ $('completedProjects').textContent=list.filter(p=>['completed','delivered'].includes(p.status)).length;
+ const root=$('projects'); root.replaceChildren();
+ if(!list.length){const empty=document.createElement('div');empty.className='panel';empty.innerHTML='<h3 style="color:var(--green);margin-top:0">No projects linked yet</h3><p class="muted">When Savannah AI Labeling creates a project under your account, it will appear here with its current stage and progress.</p><a class="btn" href="./#contact">Discuss a project</a>';root.append(empty);return;}
+ for(const p of list){
+   const card=document.createElement('article');card.className='panel project';
+   const top=document.createElement('div');top.className='project-top';
+   const heading=document.createElement('div');const h=document.createElement('h3');h.textContent=p.title;const meta=document.createElement('p');meta.className='muted';meta.textContent=(p.project_code? p.project_code+' · ':'')+p.service_type;heading.append(h,meta);
+   const pill=document.createElement('span');pill.className='pill';pill.textContent=labelStatus(p.status);top.append(heading,pill);
+   const progress=document.createElement('div');progress.className='progress';const bar=document.createElement('span');bar.style.width=(p.progress_percent||0)+'%';progress.append(bar);
+   const pct=document.createElement('div');pct.className='muted';pct.textContent=(p.progress_percent||0)+'% complete'+(p.due_date?' · Target delivery: '+new Date(p.due_date+'T00:00:00').toLocaleDateString():'');
+   const desc=document.createElement('p');desc.textContent=p.description||'Project updates and deliverables will appear below.';card.append(top,progress,pct,desc);
+   const toolBox=document.createElement('section');toolBox.className='tool-access';
+   const toolHeading=document.createElement('h4');toolHeading.textContent='Your annotation workspace';
+   const toolName=document.createElement('p');
+   const toolKey=(p.annotation_tool||'').toLowerCase();
+   const toolLabels={cvat:'CVAT',supervisely:'Supervisely',other:p.external_tool_name||'External annotation tool'};
+   toolName.textContent=(p.tool_access_mode==='byot'?'Client-owned platform: ':'Savannah-managed platform: ')+(toolLabels[toolKey]||'No annotation tool assigned yet');
+   toolBox.append(toolHeading,toolName);
+   if(p.annotation_workspace_url){
+     try{
+       const workspaceUrl=new URL(p.annotation_workspace_url);
+       if(workspaceUrl.protocol==='https:'){
+         const launch=document.createElement('a');launch.className='tool-link';launch.href=workspaceUrl.href;launch.target='_blank';launch.rel='noopener noreferrer';launch.textContent='Open annotation workspace ↗';toolBox.append(launch);
+       } else {const note=document.createElement('p');note.textContent='Workspace link is being checked by Savannah. Please contact your project manager for access.';toolBox.append(note);}
+     }catch(_){const note=document.createElement('p');note.textContent='Workspace access is being prepared. Savannah will share the secure link when it is ready.';toolBox.append(note);}
+   } else {
+     const note=document.createElement('p');note.textContent=p.tool_access_mode==='byot'?'Your client-owned workspace link is being configured. The client’s administrator must grant Savannah team members individual access.':(toolKey?'Your '+(toolLabels[toolKey]||'annotation')+' workspace link will appear here once access has been configured.':'Savannah will assign the appropriate annotation tool for this project and share access here.');toolBox.append(note);
+   }
+   card.append(toolBox);
+   const cols=document.createElement('div');cols.className='project-grid';
+   const updateBox=document.createElement('div');updateBox.className='subpanel';const uh=document.createElement('h4');uh.textContent='Latest updates';const ul=document.createElement('ul');ul.className='updates';updateBox.append(uh,ul);
+   const fileBox=document.createElement('div');fileBox.className='subpanel';const fh=document.createElement('h4');fh.textContent='Deliverables';const files=document.createElement('div');files.className='muted';files.textContent='No deliverables uploaded yet.';fileBox.append(fh,files);cols.append(updateBox,fileBox);card.append(cols);root.append(card);
+   const [{data:updates,error:ue},{data:deliverables,error:de}]=await Promise.all([
+    supabase.from('project_updates').select('title,body,status,progress_percent,created_at').eq('project_id',p.id).eq('visible_to_client',true).order('created_at',{ascending:false}).limit(8),
+    supabase.from('project_deliverables').select('file_name,storage_path,description').eq('project_id',p.id).order('created_at',{ascending:false})
+   ]);
+   if(ue) throw ue;if(de) throw de;
+   if(updates?.length){ul.replaceChildren();for(const u of updates){const li=document.createElement('li');const strong=document.createElement('strong');strong.textContent=u.title+' ';const span=document.createElement('span');span.textContent=u.body;const small=document.createElement('div');small.className='hint';small.textContent=new Date(u.created_at).toLocaleString();li.append(strong,span,small);ul.append(li);}}
+   if(deliverables?.length){files.replaceChildren();for(const f of deliverables){const row=document.createElement('p');const link=document.createElement('a');link.href='#';link.textContent='↓ '+f.file_name;link.addEventListener('click',async(ev)=>{ev.preventDefault();const {data,error}=await supabase.functions.invoke('byot-submissions',{body:{action:'client_download',storage_path:f.storage_path}});if(error){message('dashboardMessage',error.message,'error');return;}window.open(data.download_url,'_blank','noopener');});row.append(link);if(f.description){const note=document.createElement('small');note.className='hint';note.textContent=' · '+f.description;row.append(note);}files.append(row);}}
+ }
+}
+$('signOut').addEventListener('click',async()=>{await supabase.auth.signOut();$('dashboard').classList.add('hidden');$('authPanel').classList.remove('hidden');setMode('login');});
+supabase.auth.onAuthStateChange((_event,session)=>{if(session?.user && $('dashboard').classList.contains('hidden')) showDashboard(session.user).catch(e=>message('dashboardMessage',e.message,'error'));});
+const {data:{session}}=await supabase.auth.getSession();
+if(session?.user){try{await showDashboard(session.user);}catch(e){message('dashboardMessage',e.message,'error');}}
+</script>
+</body>
+</html>
