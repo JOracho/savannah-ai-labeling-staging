@@ -200,6 +200,41 @@ a{color:inherit}.topbar{background:var(--green);color:#fff;padding:14px 0}.wrap{
 </section>
 </main>
 <footer class="footer"><div class="wrap">© <span id="year"></span> Savannah AI Labeling · Ground Truth. Built with Precision.</div></footer>
+<script>
+/* Keep the sign-in / registration tabs usable even if the authentication module fails to load. */
+window.SAVANNAH_AUTH_MODE = 'login';
+(function () {
+  const byId = (id) => document.getElementById(id);
+  function switchAuthMode(nextMode) {
+    window.SAVANNAH_AUTH_MODE = nextMode;
+    const signup = nextMode === 'signup';
+    byId('loginTab').classList.toggle('active', !signup);
+    byId('signupTab').classList.toggle('active', signup);
+    byId('nameField').classList.toggle('hidden', !signup);
+    byId('fullName').required = signup;
+    byId('authTitle').textContent = signup ? 'Create your Savannah account' : 'Welcome back';
+    byId('authIntro').textContent = signup
+      ? 'Register with your email to access your Savannah workspace.'
+      : 'Sign in to open your Savannah workspace.';
+    byId('authSubmit').textContent = signup ? 'Create account' : 'Sign in';
+    byId('forgotPasswordLink').classList.toggle('hidden', signup);
+    byId('authMessage').classList.add('hidden');
+  }
+  byId('loginTab').addEventListener('click', () => switchAuthMode('login'));
+  byId('signupTab').addEventListener('click', () => switchAuthMode('signup'));
+  window.addEventListener('unhandledrejection', (event) => {
+    const message = event.reason && event.reason.message ? event.reason.message : 'The authentication service could not start.';
+    const box = byId('authMessage');
+    if (box) { box.textContent = 'Authentication could not start: ' + message; box.className = 'notice error'; }
+  });
+  window.addEventListener('error', (event) => {
+    if (event.target && event.target.tagName === 'SCRIPT') {
+      const box = byId('authMessage');
+      if (box) { box.textContent = 'The authentication module failed to load. Please refresh this page or contact Savannah support.'; box.className = 'notice error'; }
+    }
+  }, true);
+})();
+</script>
 <script type="module">
 import { createClient, SupabaseAuthAdapter } from 'https://esm.sh/@neondatabase/neon-js@0.9.0-beta';
 const NEON_AUTH_URL = 'https://ep-proud-frost-b9l8tcnp.neonauth.c-7.eu-central-1.aws.neon.tech/savannah_staging/auth';
@@ -239,7 +274,7 @@ async function ensureNeonProfile(user) {
   return { ...user, app_metadata: { ...(user.app_metadata || {}), role: result.data.profile.role } };
 }
 const $ = (id) => document.getElementById(id);
-let mode = 'login';
+let mode = window.SAVANNAH_AUTH_MODE || 'login';
 $('year').textContent = new Date().getFullYear();
 function message(id, text, type='') { const el=$(id); el.textContent=text; el.className='notice'+(type?' '+type:''); }
 
@@ -311,7 +346,7 @@ async function renderQaIssues(assignment, container, viewerRole, user, refreshDa
  container.append(box);
 }
 function setMode(next) {
-  mode=next; $('loginTab').classList.toggle('active',mode==='login'); $('signupTab').classList.toggle('active',mode==='signup');
+  mode=next; window.SAVANNAH_AUTH_MODE=next; $('loginTab').classList.toggle('active',mode==='login'); $('signupTab').classList.toggle('active',mode==='signup');
   $('nameField').classList.toggle('hidden',mode!=='signup'); $('fullName').required=mode==='signup';
   $('authTitle').textContent=mode==='login'?'Welcome back':'Create your Savannah account';
   $('authIntro').textContent=mode==='login'?'Sign in to open your Savannah workspace.':'Register with your email to access your Savannah workspace.';
