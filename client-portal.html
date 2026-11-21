@@ -723,7 +723,7 @@ if(['in_progress','rework'].includes(assignment.assignment_status) && project.to
       }catch(err){status.textContent=err.message||'Unable to submit files.';btn.disabled=false;}});
       submitBox.append(form);card.append(submitBox);
     }
-    if(['in_progress','rework'].includes(assignment.assignment_status) && String(assignment.platform||'').toLowerCase()==='supervisely' && String(project.annotation_tool||'').toLowerCase()==='supervisely' && project.tool_access_mode!=='byot' && /(lidar|point cloud|3d)/i.test((project.service_type||'')+' '+(project.title||''))){
+    if(['in_progress','rework'].includes(assignment.assignment_status) && String(assignment.platform||'').toLowerCase()==='supervisely' && String(project.annotation_tool||'').toLowerCase()==='supervisely' && project.tool_access_mode!=='byot'){
       const submitBox=document.createElement('div');submitBox.className='subpanel';submitBox.style.marginTop='14px';
       const title=document.createElement('h4');title.textContent='Submit completed Supervisely work';title.style.color='var(--green)';submitBox.append(title);
       const pointcloud=/(lidar|point cloud|3d)/i.test((project.service_type||'')+' '+(project.title||''));
