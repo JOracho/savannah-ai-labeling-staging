@@ -406,6 +406,128 @@ async function renderQaIssues(assignment, container, viewerRole, user, refreshDa
  }
  container.append(box);
 }
+
+function qaRubricDefaults(serviceType){
+ const t=String(serviceType||'').toLowerCase();
+ if(t.includes('rlhf')) return [['Preference ranking quality',30],['Rationale quality',25],['Instruction adherence',20],['Consistency',15],['Guideline adherence',10]];
+ if(t.includes('llm')||t.includes('language model')) return [['Factual accuracy',30],['Instruction adherence',25],['Relevance',20],['Completeness',15],['Clarity',10]];
+ if(t.includes('moderation')) return [['Policy accuracy',35],['Harmful content detection',25],['Severity classification',20],['Context handling',10],['Escalation accuracy',10]];
+ if(t.includes('lidar')||t.includes('3d')||t.includes('point cloud')) return [['3D geometry accuracy',30],['Class accuracy',25],['Point coverage',20],['Object tracking',15],['Coordinate and format compliance',10]];
+ if(t.includes('video')) return [['Object tracking',30],['Temporal consistency',25],['Label accuracy',20],['Frame coverage',15],['Guideline compliance',10]];
+ if(t.includes('audio')) return [['Transcript accuracy',30],['Speaker or event labeling',25],['Completeness',20],['Timestamp accuracy',15],['Guideline compliance',10]];
+ if(t.includes('text')) return [['Label accuracy',30],['Completeness',25],['Context understanding',20],['Consistency',15],['Guideline compliance',10]];
+ return [['Label and class accuracy',30],['Geometry or boundary accuracy',30],['Completeness',20],['Consistency',10],['Guideline compliance',10]];
+}
+function qaInputStyle(){return 'width:100%;padding:9px;border:1px solid #d7d9d2;border-radius:4px;font:inherit';}
+async function renderClientQaRubric(project,user,card){
+ const panel=document.createElement('section');panel.className='subpanel';panel.style.marginTop='14px';
+ const heading=document.createElement('h4');heading.textContent='Quality assurance rubric';panel.append(heading);
+ const {data:assigned,error}=await supabase.from('project_qa_rubrics')
+  .select('id,rubric_version_id,qa_rubric_versions(id,version_number,pass_threshold,qa_rubrics(name))')
+  .eq('project_id',project.id).maybeSingle();
+ if(error)throw error;
+ if(assigned){
+  const v=Array.isArray(assigned.qa_rubric_versions)?assigned.qa_rubric_versions[0]:assigned.qa_rubric_versions;
+  const r=Array.isArray(v?.qa_rubrics)?v.qa_rubrics[0]:v?.qa_rubrics;
+  const info=document.createElement('p');info.className='hint';
+  info.textContent=(r?.name||'Client QA rubric')+' · Version '+(v?.version_number||1)+' · Pass threshold '+Number(v?.pass_threshold||80)+'%';
+  panel.append(info);
+  const lock=document.createElement('p');lock.className='hint';lock.textContent='This project uses a published, version-locked rubric. To change its criteria, create a new version rather than editing this one.';
+  panel.append(lock);card.append(panel);return;
+ }
+ const intro=document.createElement('p');intro.className='hint';intro.textContent='Create a client-specific rubric for this project. Adjust each criterion and weight; the weights must total exactly 100%. Published versions are locked for auditability.';
+ const open=document.createElement('button');open.type='button';open.className='btn secondary';open.textContent='Configure QA rubric';
+ const editor=document.createElement('div');editor.style.display='none';editor.style.marginTop='12px';
+ const nameLabel=document.createElement('label');nameLabel.textContent='Rubric name';
+ const name=document.createElement('input');name.required=true;name.maxLength=120;name.value=project.service_type+' QA Rubric';name.style.cssText=qaInputStyle();
+ const thresholdLabel=document.createElement('label');thresholdLabel.textContent='Passing score (%)';
+ const threshold=document.createElement('input');threshold.type='number';threshold.min='0';threshold.max='100';threshold.step='1';threshold.value='80';threshold.style.cssText=qaInputStyle();
+ const criteriaTitle=document.createElement('strong');criteriaTitle.textContent='Evaluation criteria and weights';
+ const rows=document.createElement('div');rows.style.display='grid';rows.style.gap='8px';
+ const total=document.createElement('p');total.className='hint';
+ const status=document.createElement('p');status.className='hint';
+ const addCriterion=document.createElement('button');addCriterion.type='button';addCriterion.className='btn secondary';addCriterion.textContent='Add criterion';
+ const save=document.createElement('button');save.type='button';save.className='btn';save.textContent='Publish rubric and assign to project';
+ const defaults=qaRubricDefaults(project.service_type);
+ function addRow(label='',weight=0){
+  const row=document.createElement('div');row.style.display='grid';row.style.gridTemplateColumns='minmax(0,1fr) 90px auto';row.style.gap='8px';
+  const criterion=document.createElement('input');criterion.required=true;criterion.maxLength=120;criterion.placeholder='Criterion name';criterion.value=label;criterion.style.cssText=qaInputStyle();
+  const wt=document.createElement('input');wt.type='number';wt.min='0.01';wt.max='100';wt.step='0.01';wt.value=String(weight);wt.style.cssText=qaInputStyle();
+  const remove=document.createElement('button');remove.type='button';remove.className='btn secondary';remove.textContent='Remove';
+  remove.addEventListener('click',()=>{row.remove();updateTotal();});
+  criterion.addEventListener('input',updateTotal);wt.addEventListener('input',updateTotal);
+  row.append(criterion,wt,remove);rows.append(row);updateTotal();
+ }
+ function updateTotal(){
+  const sum=[...rows.children].reduce((n,row)=>n+Number(row.children[1].value||0),0);
+  total.textContent='Total weight: '+sum.toFixed(2)+'%'+(Math.abs(sum-100)<0.001?' · Ready to publish':' · Must equal 100%');
+  total.style.color=Math.abs(sum-100)<0.001?'#245a32':'#8b2f20';
+ }
+ defaults.forEach(x=>addRow(x[0],x[1]));
+ addCriterion.addEventListener('click',()=>addRow('',0));
+ open.addEventListener('click',()=>{editor.style.display=editor.style.display==='none'?'grid':'none';});
+ save.addEventListener('click',async()=>{
+  save.disabled=true;status.textContent='Saving and publishing rubric…';
+  try{
+   const criteria=[...rows.children].map(row=>({name:row.children[0].value.trim(),weight:Number(row.children[1].value)}));
+   const sum=criteria.reduce((n,c)=>n+c.weight,0);
+   if(!name.value.trim())throw new Error('Enter a rubric name.');
+   if(!criteria.length||criteria.some(c=>!c.name||!Number.isFinite(c.weight)||c.weight<=0)||Math.abs(sum-100)>0.001)throw new Error('Enter valid criteria with weights totalling exactly 100%.');
+   const {data:rubric,error:re}=await supabase.from('qa_rubrics').insert({owner_client_user_id:user.id,name:name.value.trim(),service_type:project.service_type,created_by:user.id}).select('id').single();
+   if(re)throw re;
+   const {data:version,error:ve}=await supabase.from('qa_rubric_versions').insert({rubric_id:rubric.id,version_number:1,status:'draft',pass_threshold:Number(threshold.value),created_by:user.id}).select('id').single();
+   if(ve)throw ve;
+   const payload=criteria.map((c,i)=>({rubric_version_id:version.id,criterion_key:'criterion_'+(i+1),name:c.name,weight:c.weight,sort_order:i+1}));
+   const {error:ce}=await supabase.from('qa_rubric_criteria').insert(payload);if(ce)throw ce;
+   const {error:pe}=await supabase.from('qa_rubric_versions').update({status:'published'}).eq('id',version.id);if(pe)throw pe;
+   const {error:ae}=await supabase.from('project_qa_rubrics').insert({project_id:project.id,rubric_version_id:version.id,assigned_by:user.id});if(ae)throw ae;
+   status.textContent='Rubric published and assigned to this project.';status.style.color='#245a32';
+   open.disabled=true;save.disabled=true;await renderClientQaRubric(project,user,card);
+  }catch(err){status.textContent=err.message||'Unable to save the rubric.';save.disabled=false;}
+ });
+ editor.append(nameLabel,name,thresholdLabel,threshold,criteriaTitle,rows,total,addCriterion,save,status);
+ panel.append(intro,open,editor);card.append(panel);
+}
+async function renderReviewerQaScore(assignment,project,card,user){
+ const panel=document.createElement('section');panel.className='subpanel';panel.style.marginTop='14px';
+ const heading=document.createElement('h4');heading.textContent='Rubric-based quality score';panel.append(heading);
+ const {data:assigned,error}=await supabase.from('project_qa_rubrics')
+  .select('rubric_version_id,qa_rubric_versions(id,version_number,pass_threshold,qa_rubrics(name),qa_rubric_criteria(id,name,description,weight,sort_order))')
+  .eq('project_id',project.id).maybeSingle();
+ if(error)throw error;
+ if(!assigned){const note=document.createElement('p');note.className='hint';note.textContent='No client-specific rubric has been assigned to this project yet. The existing issue-reporting and review controls remain available.';panel.append(note);card.append(panel);return;}
+ const version=Array.isArray(assigned.qa_rubric_versions)?assigned.qa_rubric_versions[0]:assigned.qa_rubric_versions;
+ const criteria=(version?.qa_rubric_criteria||[]).slice().sort((a,b)=>a.sort_order-b.sort_order);
+ const name=Array.isArray(version?.qa_rubrics)?version.qa_rubrics[0]?.name:version?.qa_rubrics?.name;
+ const intro=document.createElement('p');intro.className='hint';intro.textContent=(name||'Client QA rubric')+' · Version '+version.version_number+' · Pass threshold '+Number(version.pass_threshold)+'%';
+ panel.append(intro);
+ const inputs=[];
+ for(const c of criteria){
+  const row=document.createElement('div');row.style.display='grid';row.style.gridTemplateColumns='minmax(0,1fr) 100px';row.style.gap='8px';row.style.marginTop='8px';
+  const label=document.createElement('label');label.textContent=c.name+' ('+Number(c.weight)+'%)';
+  if(c.description){const small=document.createElement('small');small.className='hint';small.textContent=c.description;label.append(small);}
+  const score=document.createElement('input');score.type='number';score.min='0';score.max='100';score.step='1';score.value='100';score.required=true;score.style.cssText=qaInputStyle();
+  inputs.push({criterion_id:c.id,score});row.append(label,score);panel.append(row);
+ }
+ const notesLabel=document.createElement('label');notesLabel.textContent='Reviewer notes (optional)';
+ const notes=document.createElement('textarea');notes.rows=2;notes.maxLength=2000;notes.style.cssText=qaInputStyle();
+ const save=document.createElement('button');save.type='button';save.className='btn';save.textContent='Calculate and save QA score';
+ const status=document.createElement('p');status.className='hint';
+ save.addEventListener('click',async()=>{
+  save.disabled=true;status.textContent='Calculating weighted score…';
+  try{
+   const scores=inputs.map(x=>({criterion_id:x.criterion_id,score:Number(x.score.value)}));
+   if(scores.some(x=>!Number.isFinite(x.score)||x.score<0||x.score>100))throw new Error('Enter a score from 0 to 100 for every criterion.');
+   const {data,error:rpcError}=await supabase.rpc('submit_qa_review',{p_assignment_id:assignment.id,p_scores:scores,p_reviewer_notes:notes.value.trim()||null});
+   if(rpcError)throw rpcError;
+   if(!data?.success)throw new Error(data?.error||'The QA score was not saved.');
+   status.textContent='Saved score: '+Number(data.overall_score).toFixed(2)+'% · '+(data.outcome==='pass'?'PASS':'NEEDS REWORK')+' · Attempt '+data.attempt_number;
+   status.style.color=data.outcome==='pass'?'#245a32':'#8b2f20';
+  }catch(err){status.textContent=err.message||'Unable to calculate the QA score.';save.disabled=false;}
+ });
+ panel.append(notesLabel,notes,save,status);card.append(panel);
+}
+
 function setMode(next) {
   mode=next; window.SAVANNAH_AUTH_MODE=next; $('loginTab').classList.toggle('active',mode==='login'); $('signupTab').classList.toggle('active',mode==='signup');
   $('nameField').classList.toggle('hidden',mode!=='signup'); $('fullName').required=mode==='signup';
@@ -761,6 +883,7 @@ async function loadReviewAssignments(){
   const heading=document.createElement('h4');heading.style.margin='0';heading.style.color='var(--green)';heading.textContent=project?.title||'Annotation assignment';
   const detail=document.createElement('p');detail.className='muted';detail.textContent=(annotator?.full_name?annotator.full_name+' · ':'')+(annotator?.email||'Annotator')+' · '+(project?.service_type||'Annotation')+' · '+(isByot?(project.external_tool_name||'Client-owned tool'):'Managed tool')+' · '+item.assignment_status.replaceAll('_',' ');
   await renderQaIssues({id:item.id,projectId:project?.id||item.project_id,annotatorId:item.annotator_user_id||person.id||person.user_id},card,'reviewer',user,()=>loadReviewerDashboard(user));
+  await renderReviewerQaScore(item,project,card,user);
   const actions=document.createElement('div');actions.style.display='flex';actions.style.gap='10px';actions.style.flexWrap='wrap';
   if(isByot){
    const files=byotMap.get(item.id)?.submissions||[];
@@ -1392,7 +1515,7 @@ async function showDashboard(user, forceRefresh=false){
    card.append(toolBox);
    const cols=document.createElement('div');cols.className='project-grid';
    const updateBox=document.createElement('div');updateBox.className='subpanel';const uh=document.createElement('h4');uh.textContent='Latest updates';const ul=document.createElement('ul');ul.className='updates';updateBox.append(uh,ul);
-   const fileBox=document.createElement('div');fileBox.className='subpanel';const fh=document.createElement('h4');fh.textContent='Deliverables';const files=document.createElement('div');files.className='muted';files.textContent='No deliverables uploaded yet.';fileBox.append(fh,files);cols.append(updateBox,fileBox);card.append(cols);root.append(card);
+   const fileBox=document.createElement('div');fileBox.className='subpanel';const fh=document.createElement('h4');fh.textContent='Deliverables';const files=document.createElement('div');files.className='muted';files.textContent='No deliverables uploaded yet.';fileBox.append(fh,files);cols.append(updateBox,fileBox);card.append(cols);if(!isAdmin)await renderClientQaRubric(p,user,card);root.append(card);
    const [{data:updates,error:ue},{data:deliverables,error:de}]=await Promise.all([
     supabase.from('project_updates').select('title,body,status,progress_percent,created_at').eq('project_id',p.id).eq('visible_to_client',true).order('created_at',{ascending:false}).limit(8),
     supabase.from('project_deliverables').select('file_name,storage_path,description').eq('project_id',p.id).order('created_at',{ascending:false})
