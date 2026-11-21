@@ -294,7 +294,9 @@ async function callNeonFunction(url, body) {
   try {
     const response = await fetch(url, { method: 'POST', headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' }, body: JSON.stringify(body || {}) });
     const data = await response.json().catch(() => ({}));
-    return response.ok ? { data, error: null } : { data, error: new Error(data.error || 'Savannah service request failed (' + response.status + ').') };
+    if (response.ok) return { data, error: null };
+    const superviselyDetail = data?.supervisely_response ? ' Supervisely HTTP ' + data.supervisely_status + ': ' + data.supervisely_response : '';
+    return { data, error: new Error((data?.error || 'Savannah service request failed (' + response.status + ').') + superviselyDetail) };
   } catch (error) { return { data: null, error }; }
 }
 const supabase = {
