@@ -29,6 +29,10 @@ jobs:
       - name: Install Neon CLI
         run: npm install --global neon
 
+      - name: Install function dependencies
+        working-directory: functions/slyproject
+        run: npm install --omit=dev
+
       - name: Deploy function
         working-directory: .
         env:
