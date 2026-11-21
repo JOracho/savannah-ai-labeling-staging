@@ -517,7 +517,7 @@ async function renderReviewerQaScore(assignment,project,card,user){
   save.disabled=true;status.textContent='Calculating weighted score…';
   try{
    const scores=inputs.map(x=>({criterion_id:x.criterion_id,score:Number(x.score.value)}));
-   if(scores.some(x=>!Number.isFinite(x.score)||x.score<0||x.score>100))throw new Error('Enter a score from 0 to 100 for every criterion.');
+   if(inputs.some(x=>x.score.value.trim()==='')||scores.some(x=>!Number.isFinite(x.score)||x.score<0||x.score>100))throw new Error('Enter a score from 0 to 100 for every criterion.');
    const {data,error:rpcError}=await supabase.rpc('submit_qa_review',{p_assignment_id:assignment.id,p_scores:scores,p_reviewer_notes:notes.value.trim()||null});
    if(rpcError)throw rpcError;
    if(!data?.success)throw new Error(data?.error||'The QA score was not saved.');
