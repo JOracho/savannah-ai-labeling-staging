@@ -506,7 +506,7 @@ async function renderReviewerQaScore(assignment,project,card,user){
   const row=document.createElement('div');row.style.display='grid';row.style.gridTemplateColumns='minmax(0,1fr) 100px';row.style.gap='8px';row.style.marginTop='8px';
   const label=document.createElement('label');label.textContent=c.name+' ('+Number(c.weight)+'%)';
   if(c.description){const small=document.createElement('small');small.className='hint';small.textContent=c.description;label.append(small);}
-  const score=document.createElement('input');score.type='number';score.min='0';score.max='100';score.step='1';score.value='100';score.required=true;score.style.cssText=qaInputStyle();
+  const score=document.createElement('input');score.type='number';score.min='0';score.max='100';score.step='1';score.value='';score.placeholder='0–100';score.required=true;score.style.cssText=qaInputStyle();
   inputs.push({criterion_id:c.id,score});row.append(label,score);panel.append(row);
  }
  const notesLabel=document.createElement('label');notesLabel.textContent='Reviewer notes (optional)';
