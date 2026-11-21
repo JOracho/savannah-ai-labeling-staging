@@ -2,7 +2,6 @@ import { createRemoteJWKSet, jwtVerify } from "jose";
 import { Pool } from "pg";
 import { attachDatabasePool } from "@neon/functions";
 
-const E = encodeURIComponent;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const ALLOWED_ORIGINS = new Set([
   "https://joracho.github.io",
@@ -145,7 +144,7 @@ export default {
 
       const projectData = result.data || result.project || result;
       const externalProjectId = projectData.id ?? projectData.projectId ?? result.id;
-      if (!/^\\d+$/.test(String(externalProjectId || ""))) {
+      if (!/^\d+$/.test(String(externalProjectId || ""))) {
         return json({
           error: "Supervisely responded without a usable project ID. Check Supervisely before retrying to avoid a duplicate."
         }, 502, headers);
