@@ -151,16 +151,32 @@ export default {
         result = {};
       }
 
+      let duplicateProjectId = null;
       if (!superviselyResponse.ok) {
-        return json({
-          error: "Supervisely API error.",
-          supervisely_status: superviselyResponse.status,
-          supervisely_response: raw.slice(0, 1000)
-        }, 502, headers);
+        const duplicate = result?.details?.errors?.find(
+          (item) => item?.type === "NONUNIQUE" || result?.details?.type === "NONUNIQUE"
+        );
+        if (
+          superviselyResponse.status === 400 &&
+          result?.details?.type === "NONUNIQUE" &&
+          duplicate?.name === title &&
+          /^\\d+$/.test(String(duplicate?.id || ""))
+        ) {
+          duplicateProjectId = String(duplicate.id);
+          console.info("Using existing Supervisely project after duplicate-name response", {
+            projectId: duplicateProjectId
+          });
+        } else {
+          return json({
+            error: "Supervisely API error.",
+            supervisely_status: superviselyResponse.status,
+            supervisely_response: raw.slice(0, 1000)
+          }, 502, headers);
+        }
       }
 
       const projectData = result.data || result.project || result;
-      const externalProjectId = projectData.id ?? projectData.projectId ?? result.id;
+      const externalProjectId = duplicateProjectId || projectData.id || projectData.projectId || result.id;
       if (!/^\d+$/.test(String(externalProjectId || ""))) {
         return json({
           error: "Supervisely responded without a usable project ID. Check Supervisely before retrying to avoid a duplicate."
