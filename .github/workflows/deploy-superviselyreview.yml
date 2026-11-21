@@ -1,0 +1,40 @@
+name: Deploy superviselyreview to Neon
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check Neon API key
+        env:
+          NEON_API_KEY: ${{ secrets.NEON_API_KEY }}
+        run: |
+          if [ -z "$NEON_API_KEY" ]; then
+            echo "::error::Missing repository secret NEON_API_KEY."
+            exit 1
+          fi
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Install Neon CLI
+        run: npm install --global neon
+
+      - name: Deploy function
+        env:
+          NEON_API_KEY: ${{ secrets.NEON_API_KEY }}
+        run: |
+          neon functions deploy superviselyreview \
+            --src functions/superviselyreview \
+            --project-id proud-firefly-64672692 \
+            --branch br-calm-cherry-b973fs8j \
+            --wait
