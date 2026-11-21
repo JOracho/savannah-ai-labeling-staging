@@ -1,2 +1,178 @@
-const E=encodeURIComponent,U=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i,OR=new Set(['https://joracho.github.io','http://localhost:3000','http://127.0.0.1:5500']);const H=o=>({'Access-Control-Allow-Origin':OR.has(o)?o:'https://joracho.github.io','Access-Control-Allow-Headers':'authorization,content-type','Access-Control-Allow-Methods':'POST,OPTIONS','Vary':'Origin'}),R=(b,s,h)=>new Response(JSON.stringify(b),{status:s,headers:{...h,'Content-Type':'application/json'}});async function db(p,t,opt={}){const r=await fetch(process.env.NEON_DATA_API_URL.replace(/\/$/,'')+p,{...opt,headers:{Authorization:'Bearer '+t,'Content-Type':'application/json',...(opt.headers||{})}}),x=await r.text();let d=null;try{d=x?JSON.parse(x):null}catch{d={message:x}}if(!r.ok)throw Error(d?.message||d?.details||'Database request failed');return d}export default{async fetch(req){const h=H(req.headers.get('origin')||'');if(req.method==='OPTIONS')return new Response(null,{status:204,headers:h});if(req.method!=='POST')return R({error:'Method not allowed.'},405,h);const t=(req.headers.get('authorization')||'').replace(/^Bearer\\s+/i,'');if(!t)return R({error:'Sign in is required.'},401,h);try{const c=JSON.parse(Buffer.from(t.split('.')[1]||'','base64url').toString());if(!U.test(c.sub||''))return R({error:'Invalid session.'},401,h);const ps=await db(`/profiles?select=id,role&id=eq.${E(c.sub)}&limit=1`,t),me=ps[0];if(me?.role!=='admin')return R({error:'Administrator access is required.'},403,h);if(!process.env.SUPERVISELY_API_TOKEN)return R({error:'SUPERVISELY_API_TOKEN is not configured in Neon Function secrets.'},503,h);const b=await req.json().catch(()=>({})),title=String(b.title||'').trim(),service=String(b.service_type||'').trim(),description=String(b.description||'').trim(),client=U.test(String(b.client_user_id||''))?b.client_user_id:c.sub;if(!title||title.length>120||!service||service.length>100||description.length>2000)return R({error:'Enter a project title, service type and description within the stated limits.'},400,h);const s=service.toLowerCase(),type=s.includes('lidar')||s.includes('point cloud')||s.includes('3d')?'point_clouds':s.includes('video')?'videos':'images';const resp=await fetch('https://app.supervisely.com/public/api/v3/projects.add',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':process.env.SUPERVISELY_API_TOKEN},body:JSON.stringify({workspaceId:142007,name:title,description,type})}),raw=await resp.text();let v={};try{v=raw?JSON.parse(raw):{}}catch{}if(!resp.ok)return R({error:'Supervisely API error.',supervisely_status:resp.status,supervisely_response:raw.slice(0,1000)},502,h);
-const n=v.data||v.project||v,id=n.id??n.projectId??v.id;if(!/^\\d+$/.test(String(id||'')))return R({error:'Supervisely responded without a usable project ID. Check Supervisely before retrying to avoid a duplicate.'},502,h);const url=`https://app.supervisely.com/projects/${id}/datasets`;const saved=await db('/projects',t,{method:'POST',headers:{Prefer:'return=representation'},body:JSON.stringify({client_user_id:client,title,service_type:service,description:description||null,annotation_tool:'supervisely',annotation_workspace_url:url,tool_access_mode:'managed',status:'project_submitted',progress_percent:0})});return R({success:true,project:saved[0],supervisely_project_id:String(id),workspace_id:142007,workspace_url:url},201,h)}catch(e){console.error('Supervisely project creation failed',e);return R({error:e.message||'Unable to create Supervisely project.'},500,h)}}};
+import { createRemoteJWKSet, jwtVerify } from "jose";
+import { Pool } from "pg";
+import { attachDatabasePool } from "@neon/functions";
+
+const E = encodeURIComponent;
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const ALLOWED_ORIGINS = new Set([
+  "https://joracho.github.io",
+  "http://localhost:3000",
+  "http://127.0.0.1:5500"
+]);
+
+const pool = new Pool({ connectionString: process.env.DATABASE_URL, max: 5 });
+attachDatabasePool(pool);
+
+const jwks = process.env.NEON_AUTH_JWKS_URL
+  ? createRemoteJWKSet(new URL(process.env.NEON_AUTH_JWKS_URL))
+  : null;
+const issuer = process.env.NEON_AUTH_BASE_URL
+  ? new URL(process.env.NEON_AUTH_BASE_URL).origin
+  : null;
+
+function cors(origin) {
+  return {
+    "Access-Control-Allow-Origin": ALLOWED_ORIGINS.has(origin) ? origin : "https://joracho.github.io",
+    "Access-Control-Allow-Headers": "authorization,content-type",
+    "Access-Control-Allow-Methods": "POST,OPTIONS",
+    "Vary": "Origin"
+  };
+}
+
+function json(body, status, headers) {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { ...headers, "Content-Type": "application/json" }
+  });
+}
+
+export default {
+  async fetch(request) {
+    const headers = cors(request.headers.get("origin") || "");
+
+    if (request.method === "OPTIONS") {
+      return new Response(null, { status: 204, headers });
+    }
+    if (request.method !== "POST") {
+      return json({ error: "Method not allowed." }, 405, headers);
+    }
+
+    const authorization = request.headers.get("authorization") || "";
+    if (!authorization.toLowerCase().startsWith("bearer ")) {
+      return json({ error: "Sign in is required." }, 401, headers);
+    }
+    if (!jwks || !issuer || !process.env.DATABASE_URL) {
+      return json({ error: "Savannah authentication or database configuration is unavailable." }, 503, headers);
+    }
+
+    let userId;
+    try {
+      const { payload } = await jwtVerify(authorization.slice(7), jwks, { issuer });
+      if (!UUID.test(String(payload.sub || ""))) {
+        return json({ error: "Invalid session." }, 401, headers);
+      }
+      userId = payload.sub;
+    } catch {
+      return json({ error: "Your session is invalid or has expired. Please sign in again." }, 401, headers);
+    }
+
+    try {
+      const adminResult = await pool.query(
+        "SELECT id, role FROM public.profiles WHERE id = $1 LIMIT 1",
+        [userId]
+      );
+      if (adminResult.rows[0]?.role !== "admin") {
+        return json({ error: "Administrator access is required." }, 403, headers);
+      }
+
+      if (!process.env.SUPERVISELY_API_TOKEN) {
+        return json({ error: "SUPERVISELY_API_TOKEN is not configured in Neon Function secrets." }, 503, headers);
+      }
+
+      const body = await request.json().catch(() => ({}));
+      const title = String(body.title || "").trim();
+      const service = String(body.service_type || "").trim();
+      const description = String(body.description || "").trim();
+      const suppliedClientId = String(body.client_user_id || "").trim();
+
+      if (!title || title.length > 120 || !service || service.length > 100 || description.length > 2000) {
+        return json({ error: "Enter a project title, service type and description within the stated limits." }, 400, headers);
+      }
+      if (suppliedClientId && !UUID.test(suppliedClientId)) {
+        return json({ error: "The selected client account ID is invalid." }, 400, headers);
+      }
+
+      const clientId = suppliedClientId || userId;
+      if (suppliedClientId) {
+        const clientResult = await pool.query(
+          "SELECT id FROM public.profiles WHERE id = $1 LIMIT 1",
+          [clientId]
+        );
+        if (!clientResult.rows.length) {
+          return json({ error: "The selected client account was not found. Confirm the client has registered in Savannah." }, 404, headers);
+        }
+      }
+
+      const normalizedService = service.toLowerCase();
+      const projectType =
+        normalizedService.includes("lidar") ||
+        normalizedService.includes("point cloud") ||
+        normalizedService.includes("3d")
+          ? "point_clouds"
+          : normalizedService.includes("video")
+            ? "videos"
+            : "images";
+
+      const superviselyResponse = await fetch("https://app.supervisely.com/public/api/v3/projects.add", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-api-key": process.env.SUPERVISELY_API_TOKEN
+        },
+        body: JSON.stringify({
+          workspaceId: 142007,
+          name: title,
+          description,
+          type: projectType
+        })
+      });
+
+      const raw = await superviselyResponse.text();
+      let result = {};
+      try {
+        result = raw ? JSON.parse(raw) : {};
+      } catch {
+        result = {};
+      }
+
+      if (!superviselyResponse.ok) {
+        return json({
+          error: "Supervisely API error.",
+          supervisely_status: superviselyResponse.status,
+          supervisely_response: raw.slice(0, 1000)
+        }, 502, headers);
+      }
+
+      const projectData = result.data || result.project || result;
+      const externalProjectId = projectData.id ?? projectData.projectId ?? result.id;
+      if (!/^\\d+$/.test(String(externalProjectId || ""))) {
+        return json({
+          error: "Supervisely responded without a usable project ID. Check Supervisely before retrying to avoid a duplicate."
+        }, 502, headers);
+      }
+
+      const workspaceUrl = `https://app.supervisely.com/projects/${externalProjectId}/datasets`;
+      const saved = await pool.query(
+        `INSERT INTO public.projects
+          (client_user_id, title, service_type, description, annotation_tool,
+           annotation_workspace_url, tool_access_mode, status, progress_percent)
+         VALUES ($1, $2, $3, $4, 'supervisely', $5, 'managed', 'project_submitted', 0)
+         RETURNING * `,
+        [clientId, title, service, description || null, workspaceUrl]
+      );
+
+      return json({
+        success: true,
+        project: saved.rows[0],
+        supervisely_project_id: String(externalProjectId),
+        workspace_id: 142007,
+        workspace_url: workspaceUrl
+      }, 201, headers);
+    } catch (error) {
+      console.error("Supervisely project creation failed:", error);
+      return json({
+        error: error?.message || "Unable to create the Supervisely project."
+      }, 500, headers);
+    }
+  }
+};
