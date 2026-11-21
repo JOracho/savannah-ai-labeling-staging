@@ -160,7 +160,7 @@ export default {
           superviselyResponse.status === 400 &&
           result?.details?.type === "NONUNIQUE" &&
           duplicate?.name === title &&
-          /^\\d+$/.test(String(duplicate?.id || ""))
+          /^\d+$/.test(String(duplicate?.id || ""))
         ) {
           duplicateProjectId = String(duplicate.id);
           console.info("Using existing Supervisely project after duplicate-name response", {
