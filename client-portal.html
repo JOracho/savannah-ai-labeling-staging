@@ -482,7 +482,7 @@ async function renderClientQaRubric(project,user,card){
    const {error:pe}=await supabase.from('qa_rubric_versions').update({status:'published'}).eq('id',version.id);if(pe)throw pe;
    const {error:ae}=await supabase.from('project_qa_rubrics').insert({project_id:project.id,rubric_version_id:version.id,assigned_by:user.id});if(ae)throw ae;
    status.textContent='Rubric published and assigned to this project.';status.style.color='#245a32';
-   open.disabled=true;save.disabled=true;await renderClientQaRubric(project,user,card);
+   open.disabled=true;save.disabled=true;panel.remove();await renderClientQaRubric(project,user,card);
   }catch(err){status.textContent=err.message||'Unable to save the rubric.';save.disabled=false;}
  });
  editor.append(nameLabel,name,thresholdLabel,threshold,criteriaTitle,rows,total,addCriterion,save,status);
