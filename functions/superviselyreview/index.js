@@ -23,10 +23,10 @@ function sign(method, key, contentType = '', expires = 300) {
   const access = process.env.AWS_ACCESS_KEY_ID;
   const secret = process.env.AWS_SECRET_ACCESS_KEY;
   if (!access || !secret || !region) throw new Error('Neon Object Storage credentials are not available to this function.');
-  const date = new Date().toISOString().replace(/[:-]|\\.\\d{3}/g, '');
+  const date = new Date().toISOString().replace(/[:-]|\.\d{3}/g, '');
   const day = date.slice(0, 8);
   const scope = `${day}/${region}/s3/aws4_request`;
-  const uri = (endpoint.pathname.replace(/\\/$/, '') || '') + '/' + BUCKET + '/' + key.split('/').map(encode).join('/');
+  const uri = (endpoint.pathname.replace(/\/$/, '') || '') + '/' + BUCKET + '/' + key.split('/').map(encode).join('/');
   const signedHeaders = contentType ? 'content-type;host' : 'host';
   const query = {
     'X-Amz-Algorithm': 'AWS4-HMAC-SHA256',
@@ -37,11 +37,11 @@ function sign(method, key, contentType = '', expires = 300) {
   };
   const canonicalQuery = Object.keys(query).sort().map(k => encode(k) + '=' + encode(query[k])).join('&');
   const canonicalHeaders = contentType
-    ? `content-type:${contentType}\\nhost:${endpoint.host}\\n`
-    : `host:${endpoint.host}\\n`;
-  const canonicalRequest = `${method}\\n${uri}\\n${canonicalQuery}\\n${canonicalHeaders}\\n${signedHeaders}\\nUNSIGNED-PAYLOAD`;
+    ? `content-type:${contentType}\nhost:${endpoint.host}\n`
+    : `host:${endpoint.host}\n`;
+  const canonicalRequest = `${method}\n${uri}\n${canonicalQuery}\n${canonicalHeaders}\n${signedHeaders}\nUNSIGNED-PAYLOAD`;
   const hash = createHash('sha256').update(canonicalRequest).digest('hex');
-  const stringToSign = `AWS4-HMAC-SHA256\\n${date}\\n${scope}\\n${hash}`;
+  const stringToSign = `AWS4-HMAC-SHA256\n${date}\n${scope}\n${hash}`;
   const hmac = (keyBytes, value) => createHmac('sha256', keyBytes).update(value).digest();
   const kDate = hmac('AWS4' + secret, day);
   const kRegion = hmac(kDate, region);
@@ -51,7 +51,7 @@ function sign(method, key, contentType = '', expires = 300) {
   return `${endpoint.origin}${uri}?${canonicalQuery}&X-Amz-Signature=${signature}`;
 }
 async function db(path, token, options = {}) {
-  const result = await fetch(process.env.NEON_DATA_API_URL.replace(/\\/$/, '') + path, {
+  const result = await fetch(process.env.NEON_DATA_API_URL.replace(/\/$/, '') + path, {
     ...options,
     headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json', ...(options.headers || {}) }
   });
@@ -87,7 +87,7 @@ export default {
     if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: cors });
     if (request.method !== 'POST') return response({ error: 'Method not allowed.' }, 405, cors);
 
-    const token = (request.headers.get('authorization') || '').replace(/^Bearer\\s+/i, '');
+    const token = (request.headers.get('authorization') || '').replace(/^Bearer\s+/i, '');
     if (!token) return response({ error: 'Sign in required.' }, 401, cors);
 
     try {
@@ -131,10 +131,10 @@ export default {
       const datasetId = String(body.external_dataset_id || '').trim();
       const mediaType = String(body.media_type || 'image').toLowerCase() === 'pointcloud' ? 'pointcloud' : 'image';
       const mediaId = String(body.external_image_id || body.external_pointcloud_id || '').trim();
-      if (!/^\\d+$/.test(externalProjectId) || !/^\\d+$/.test(datasetId) || !/^\\d+$/.test(mediaId)) {
+      if (!/^\d+$/.test(externalProjectId) || !/^\d+$/.test(datasetId) || !/^\d+$/.test(mediaId)) {
         return response({ error: 'Enter numeric Supervisely project, dataset and image/point-cloud IDs.' }, 400, cors);
       }
-      const workspaceMatch = String(project.annotation_workspace_url || '').match(/projects\\/(\\d+)/);
+      const workspaceMatch = String(project.annotation_workspace_url || '').match(/projects\/(\d+)/);
       if (!workspaceMatch || workspaceMatch[1] !== externalProjectId) {
         return response({ error: 'Supervisely project ID does not match the Savannah workspace.' }, 403, cors);
       }
