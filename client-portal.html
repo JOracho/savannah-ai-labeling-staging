@@ -542,7 +542,7 @@ $('assignAnnotatorForm').addEventListener('submit',async(e)=>{
       ? (project.annotation_tool==='other'?'byot':project.annotation_tool||'byot')
       : (['supervisely','cvat'].includes((project.annotation_tool||'').toLowerCase())?project.annotation_tool.toLowerCase():'other');
     const taskReference=$('assignmentTaskReference').value.trim();
-    const {error}=await supabase.from('project_assignments').upsert({
+    const {data:assignmentRow,error}=await supabase.from('project_assignments').upsert({
       project_id:project.id,
       annotator_user_id:annotator.id,
       platform,
@@ -554,9 +554,14 @@ $('assignAnnotatorForm').addEventListener('submit',async(e)=>{
       external_frame_stop:$('assignmentFrameStop').value.trim()?Number($('assignmentFrameStop').value.trim()):null,
       team_lead_user_id:$('assignmentTeamLead').value||null,
       assignment_status:'assigned'
-    },{onConflict:'project_id,annotator_user_id'});
+    },{onConflict:'project_id,annotator_user_id'}).select('id').single();
     if(error)throw error;
-    message('assignmentMessage','Annotator assigned successfully. Remember to invite their individual account into the annotation workspace as well.','success');
+    const {error:accessError}=await supabase.from('assignment_workspace_access').upsert({
+      assignment_id:assignmentRow.id,project_id:project.id,annotator_user_id:annotator.id,
+      access_status:'pending_invite',invitation_email:annotator.email||null
+    },{onConflict:'assignment_id'});
+    if(accessError)throw accessError;
+    message('assignmentMessage','Annotator assigned. Their individual external workspace invitation is now tracked as pending.','success');
     $('assignmentTaskReference').value='';
     ['assignmentCvatTaskId','assignmentCvatJobId','assignmentCvatProjectId','assignmentFrameStart','assignmentFrameStop'].forEach(id=>$(id).value='');
   }catch(err){
@@ -1076,7 +1081,7 @@ async function loadAdminPanel(){
  for(const a of annotatorAccounts){const o=document.createElement('option');o.value=a.id;o.textContent=(a.full_name?a.full_name+' · ':'')+a.email;accessAnnotator.append(o);}
  $('saveWorkspaceAccess').disabled=!adminProjects.length||!annotatorAccounts.length;
  function fillWorkspaceAccessEmail(){const a=annotatorAccounts.find(x=>x.id===accessAnnotator.value);$('workspaceAccessEmail').value=a?.email||'';}
- accessAnnotator.addEventListener('change',fillWorkspaceAccessEmail);fillWorkspaceAccessEmail();
+ accessAnnotator.onchange=fillWorkspaceAccessEmail;fillWorkspaceAccessEmail();
  try{await loadReviewAssignments();}catch(err){message('reviewMessage','Unable to load submitted assignments: '+err.message,'error');}
  const deliverableSelect=$('deliverableProject');
  deliverableSelect.replaceChildren();
