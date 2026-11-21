@@ -473,7 +473,7 @@ async function renderClientQaRubric(project,user,card){
    const sum=criteria.reduce((n,c)=>n+c.weight,0);
    if(!name.value.trim())throw new Error('Enter a rubric name.');
    if(!criteria.length||criteria.some(c=>!c.name||!Number.isFinite(c.weight)||c.weight<=0)||Math.abs(sum-100)>0.001)throw new Error('Enter valid criteria with weights totalling exactly 100%.');
-   const {data:rubric,error:re}=await supabase.from('qa_rubrics').insert({owner_client_user_id:user.id,name:name.value.trim(),service_type:project.service_type,created_by:user.id}).select('id').single();
+   const {data:rubric,error:re}=await supabase.from('qa_rubrics').insert({owner_client_user_id:project.client_user_id||user.id,name:name.value.trim(),service_type:project.service_type,created_by:user.id}).select('id').single();
    if(re)throw re;
    const {data:version,error:ve}=await supabase.from('qa_rubric_versions').insert({rubric_id:rubric.id,version_number:1,status:'draft',pass_threshold:Number(threshold.value),created_by:user.id}).select('id').single();
    if(ve)throw ve;
@@ -1515,7 +1515,7 @@ async function showDashboard(user, forceRefresh=false){
    card.append(toolBox);
    const cols=document.createElement('div');cols.className='project-grid';
    const updateBox=document.createElement('div');updateBox.className='subpanel';const uh=document.createElement('h4');uh.textContent='Latest updates';const ul=document.createElement('ul');ul.className='updates';updateBox.append(uh,ul);
-   const fileBox=document.createElement('div');fileBox.className='subpanel';const fh=document.createElement('h4');fh.textContent='Deliverables';const files=document.createElement('div');files.className='muted';files.textContent='No deliverables uploaded yet.';fileBox.append(fh,files);cols.append(updateBox,fileBox);card.append(cols);if(!isAdmin)await renderClientQaRubric(p,user,card);root.append(card);
+   const fileBox=document.createElement('div');fileBox.className='subpanel';const fh=document.createElement('h4');fh.textContent='Deliverables';const files=document.createElement('div');files.className='muted';files.textContent='No deliverables uploaded yet.';fileBox.append(fh,files);cols.append(updateBox,fileBox);card.append(cols);await renderClientQaRubric(p,user,card);root.append(card);
    const [{data:updates,error:ue},{data:deliverables,error:de}]=await Promise.all([
     supabase.from('project_updates').select('title,body,status,progress_percent,created_at').eq('project_id',p.id).eq('visible_to_client',true).order('created_at',{ascending:false}).limit(8),
     supabase.from('project_deliverables').select('file_name,storage_path,description').eq('project_id',p.id).order('created_at',{ascending:false})
