@@ -65,6 +65,23 @@ export default {
       return json({ error: "Your session is invalid or has expired. Please sign in again." }, 401, headers);
     }
 
+    const dbUrl = process.env.DATABASE_URL;
+    let dbUrlInfo = { present: typeof dbUrl === "string" && dbUrl.length > 0, type: typeof dbUrl };
+    try {
+      const parsedDbUrl = new URL(dbUrl);
+      dbUrlInfo = {
+        ...dbUrlInfo,
+        protocol: parsedDbUrl.protocol,
+        hostPresent: Boolean(parsedDbUrl.hostname),
+        usernamePresent: Boolean(parsedDbUrl.username),
+        passwordPresent: Boolean(parsedDbUrl.password),
+        databasePresent: parsedDbUrl.pathname.length > 1
+      };
+    } catch {
+      dbUrlInfo.parseable = false;
+    }
+    console.info("Database connection diagnostic (no credentials)", dbUrlInfo);
+
     try {
       const adminResult = await pool.query(
         "SELECT id, role FROM public.profiles WHERE id = $1 LIMIT 1",
