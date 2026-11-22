@@ -319,6 +319,21 @@ async function callNeonFunction(url, body) {
     return { data, error: new Error((data?.error || 'Savannah service request failed (' + response.status + ').') + superviselyDetail) };
   } catch (error) { return { data: null, error }; }
 }
+async function callNeonRpc(functionName, args) {
+  const { data: sessionData, error: sessionError } = await neon.auth.getSession();
+  const token = sessionData?.session?.access_token;
+  if (sessionError || !token) return { data: null, error: new Error('Your session has expired. Sign in again.') };
+  try {
+    const response = await fetch(NEON_DATA_API_URL + '/rpc/' + encodeURIComponent(functionName), {
+      method: 'POST',
+      headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify(args || {})
+    });
+    const data = await response.json().catch(() => ({}));
+    if (response.ok) return { data, error: null };
+    return { data: null, error: new Error(data?.message || data?.details || data?.hint || data?.error || 'QA request failed (' + response.status + ').') };
+  } catch (error) { return { data: null, error }; }
+}
 const supabase = {
   from: (...args) => neon.from(...args),
   auth: neon.auth,
@@ -518,7 +533,7 @@ async function renderReviewerQaScore(assignment,project,card,user){
   try{
    const scores=inputs.map(x=>({criterion_id:x.criterion_id,score:Number(x.score.value)}));
    if(inputs.some(x=>x.score.value.trim()==='')||scores.some(x=>!Number.isFinite(x.score)||x.score<0||x.score>100))throw new Error('Enter a score from 0 to 100 for every criterion.');
-   const {data,error:rpcError}=await supabase.rpc('submit_qa_review',{p_assignment_id:assignment.id,p_scores:scores,p_reviewer_notes:notes.value.trim()||null});
+   const {data,error:rpcError}=await callNeonRpc('submit_qa_review',{p_assignment_id:assignment.id,p_scores:scores,p_reviewer_notes:notes.value.trim()||null});
    if(rpcError)throw rpcError;
    if(!data?.success)throw new Error(data?.error||'The QA score was not saved.');
    status.textContent='Saved score: '+Number(data.overall_score).toFixed(2)+'% · '+(data.outcome==='pass'?'PASS':'NEEDS REWORK')+' · Attempt '+data.attempt_number;
