@@ -867,7 +867,7 @@ if(['in_progress','rework'].includes(assignment.assignment_status) && project.to
 }
 async function loadReviewAssignments(){
  const root=$('reviewAssignments');root.replaceChildren();
- const {data,error}=await supabase.from('project_assignments').select('id,annotator_user_id,assignment_status,assigned_at,projects(title,project_code,service_type,tool_access_mode,external_tool_name)').in('assignment_status',['submitted','review']).order('assigned_at',{ascending:false});
+ const {data,error}=await supabase.from('project_assignments').select('id,annotator_user_id,assignment_status,assigned_at,projects(id,title,project_code,service_type,tool_access_mode,external_tool_name)').in('assignment_status',['submitted','review']).order('assigned_at',{ascending:false});
  if(error)throw error;
  const pending=data||[];
  const {data:byotData,error:byotError}=await supabase.functions.invoke('byot-submissions',{body:{action:'list_queue'}});
