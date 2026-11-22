@@ -216,7 +216,7 @@ export default {
         imported_by: claims.sub,
         imported_at: new Date().toISOString()
       };
-      const saved = await db('/project_annotations?on_conflict=project_id,external_platform,external_image_id', token, {
+      const saved = await db('/project_annotations?on_conflict=assignment_id,external_platform,external_image_id', token, {
         method: 'POST',
         headers: { Prefer: 'resolution=merge-duplicates,return=representation' },
         body: JSON.stringify(record)
