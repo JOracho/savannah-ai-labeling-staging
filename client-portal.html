@@ -785,7 +785,7 @@ async function loadAnnotatorDashboard(user){
   const assignments=data||[];
   $('annotatorAssignedCount').textContent=assignments.length;
   $('annotatorActiveCount').textContent=assignments.filter(a=>['accepted','in_progress','rework'].includes(a.assignment_status)).length;
-  $('annotatorSubmittedCount').textContent=assignments.filter(a=>['submitted','review','approved'].includes(a.assignment_status)).length;
+  $('annotatorSubmittedCount').textContent=assignments.filter(a=>['submitted','review'].includes(a.assignment_status)).length;
   const root=$('annotatorAssignments');root.replaceChildren();
   if(!assignments.length){
     const empty=document.createElement('article');empty.className='panel';
