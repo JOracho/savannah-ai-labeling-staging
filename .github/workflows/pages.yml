@@ -1,3 +1,4 @@
+# Start a clean Pages run; each run must produce exactly one github-pages artifact.
 name: Deploy staging site to GitHub Pages
 
 on:
