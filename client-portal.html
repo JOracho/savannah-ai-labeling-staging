@@ -503,7 +503,7 @@ async function renderClientQaRubric(project,user,card){
  editor.append(nameLabel,name,thresholdLabel,threshold,criteriaTitle,rows,total,addCriterion,save,status);
  panel.append(intro,open,editor);card.append(panel);
 }
-async function renderReviewerQaScore(assignment,project,card,user){
+async function renderReviewerQaScore(assignment,project,card,user,onOutcome=()=>{}){
  const panel=document.createElement('section');panel.className='subpanel';panel.style.marginTop='14px';
  const heading=document.createElement('h4');heading.textContent='Rubric-based quality score';panel.append(heading);
  const {data:assigned,error}=await supabase.from('project_qa_rubrics')
@@ -513,9 +513,14 @@ async function renderReviewerQaScore(assignment,project,card,user){
  if(!assigned){const note=document.createElement('p');note.className='hint';note.textContent='No client-specific rubric has been assigned to this project yet. The existing issue-reporting and review controls remain available.';panel.append(note);card.append(panel);return;}
  const version=Array.isArray(assigned.qa_rubric_versions)?assigned.qa_rubric_versions[0]:assigned.qa_rubric_versions;
  const criteria=(version?.qa_rubric_criteria||[]).slice().sort((a,b)=>a.sort_order-b.sort_order);
+ const {data:latestReview,error:latestError}=await supabase.from('qa_reviews').select('overall_score,outcome,attempt_number').eq('assignment_id',assignment.id).order('attempt_number',{ascending:false}).limit(1).maybeSingle();
+ if(latestError)throw latestError;
+ if(latestReview)onOutcome(latestReview.outcome);
  const name=Array.isArray(version?.qa_rubrics)?version.qa_rubrics[0]?.name:version?.qa_rubrics?.name;
  const intro=document.createElement('p');intro.className='hint';intro.textContent=(name||'Client QA rubric')+' · Version '+version.version_number+' · Pass threshold '+Number(version.pass_threshold)+'%';
  panel.append(intro);
+ if(latestReview){const previous=document.createElement('p');previous.className='hint';previous.textContent='Latest saved result: '+Number(latestReview.overall_score).toFixed(2)+'% · '+(latestReview.outcome==='pass'?'PASS':'NEEDS REWORK')+' · Attempt '+latestReview.attempt_number;previous.style.color=latestReview.outcome==='pass'?'#245a32':'#8b2f20';panel.append(previous);}
+
  const inputs=[];
  for(const c of criteria){
   const row=document.createElement('div');row.style.display='grid';row.style.gridTemplateColumns='minmax(0,1fr) 100px';row.style.gap='8px';row.style.marginTop='8px';
@@ -538,6 +543,7 @@ async function renderReviewerQaScore(assignment,project,card,user){
    if(!data?.success)throw new Error(data?.error||'The QA score was not saved.');
    status.textContent='Saved score: '+Number(data.overall_score).toFixed(2)+'% · '+(data.outcome==='pass'?'PASS':'NEEDS REWORK')+' · Attempt '+data.attempt_number;
    status.style.color=data.outcome==='pass'?'#245a32':'#8b2f20';
+   onOutcome(data.outcome);
   }catch(err){status.textContent=err.message||'Unable to calculate the QA score.';save.disabled=false;}
  });
  panel.append(notesLabel,notes,save,status);card.append(panel);
@@ -898,7 +904,9 @@ async function loadReviewAssignments(){
   const heading=document.createElement('h4');heading.style.margin='0';heading.style.color='var(--green)';heading.textContent=project?.title||'Annotation assignment';
   const detail=document.createElement('p');detail.className='muted';detail.textContent=(annotator?.full_name?annotator.full_name+' · ':'')+(annotator?.email||'Annotator')+' · '+(project?.service_type||'Annotation')+' · '+(isByot?(project.external_tool_name||'Client-owned tool'):'Managed tool')+' · '+item.assignment_status.replaceAll('_',' ');
   await renderQaIssues({id:item.id,projectId:project?.id||item.project_id,annotatorId:item.annotator_user_id||person.id||person.user_id},card,'reviewer',user,()=>loadReviewerDashboard(user));
-  await renderReviewerQaScore(item,project,card,user);
+  let qaOutcome=null;const qaDecisionButtons=[];
+  const updateQaDecisionButtons=()=>{for(const entry of qaDecisionButtons){const allowed=entry.status==='approved'?qaOutcome==='pass':qaOutcome==='needs_rework';entry.button.disabled=entry.hasRubric&&!allowed;entry.button.title=entry.hasRubric&&!qaOutcome?'Save a QA score before making a decision.':entry.hasRubric&&!allowed?'This decision does not match the saved QA result.':'';}};
+  await renderReviewerQaScore(item,project,card,user,outcome=>{qaOutcome=outcome;updateQaDecisionButtons();});
   const actions=document.createElement('div');actions.style.display='flex';actions.style.gap='10px';actions.style.flexWrap='wrap';
   if(isByot){
    const files=byotMap.get(item.id)?.submissions||[];
@@ -910,7 +918,10 @@ async function loadReviewAssignments(){
   }else{card.append(heading,detail);}
   for(const choice of [{status:'approved',label:'Approve work'},{status:'rework',label:'Request rework'}]){
    const button=document.createElement('button');button.type='button';button.className='btn'+(choice.status==='rework'?' secondary':'');button.textContent=choice.label;
+   const hasRubric=!!card.querySelector('section.subpanel');qaDecisionButtons.push({status:choice.status,button,hasRubric});
+   button.disabled=hasRubric&&!(choice.status==='approved'?qaOutcome==='pass':qaOutcome==='needs_rework');
    button.addEventListener('click',async()=>{button.disabled=true;try{
+    if(hasRubric&&!(choice.status==='approved'?qaOutcome==='pass':qaOutcome==='needs_rework'))throw new Error('The decision must match the latest saved QA result. Save a QA score first.');
     const target=isByot?'byot-submissions':'manage-annotators';
     const body=isByot?{action:'review',assignment_id:item.id,assignment_status:choice.status}:{action:'review_assignment',assignment_id:item.id,assignment_status:choice.status};
     const {data:result,error:invokeError}=await supabase.functions.invoke(target,{body});
