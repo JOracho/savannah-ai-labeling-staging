@@ -511,6 +511,7 @@ async function renderReviewerQaScore(assignment,project,card,user,onOutcome=()=>
   .eq('project_id',project.id).maybeSingle();
  if(error)throw error;
  if(!assigned){const note=document.createElement('p');note.className='hint';note.textContent='No client-specific rubric has been assigned to this project yet. The existing issue-reporting and review controls remain available.';panel.append(note);card.append(panel);return;}
+ panel.dataset.qaRubric='true';
  const version=Array.isArray(assigned.qa_rubric_versions)?assigned.qa_rubric_versions[0]:assigned.qa_rubric_versions;
  const criteria=(version?.qa_rubric_criteria||[]).slice().sort((a,b)=>a.sort_order-b.sort_order);
  const {data:latestReview,error:latestError}=await supabase.from('qa_reviews').select('overall_score,outcome,attempt_number').eq('assignment_id',assignment.id).order('attempt_number',{ascending:false}).limit(1).maybeSingle();
@@ -918,7 +919,7 @@ async function loadReviewAssignments(){
   }else{card.append(heading,detail);}
   for(const choice of [{status:'approved',label:'Approve work'},{status:'rework',label:'Request rework'}]){
    const button=document.createElement('button');button.type='button';button.className='btn'+(choice.status==='rework'?' secondary':'');button.textContent=choice.label;
-   const hasRubric=!!card.querySelector('section.subpanel');qaDecisionButtons.push({status:choice.status,button,hasRubric});
+   const hasRubric=!!card.querySelector('[data-qa-rubric="true"]');qaDecisionButtons.push({status:choice.status,button,hasRubric});
    button.disabled=hasRubric&&!(choice.status==='approved'?qaOutcome==='pass':qaOutcome==='needs_rework');
    button.addEventListener('click',async()=>{button.disabled=true;try{
     if(hasRubric&&!(choice.status==='approved'?qaOutcome==='pass':qaOutcome==='needs_rework'))throw new Error('The decision must match the latest saved QA result. Save a QA score first.');
