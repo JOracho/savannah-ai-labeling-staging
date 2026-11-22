@@ -526,56 +526,59 @@ async function renderReviewerQaScore(assignment,project,card,user,onOutcome=()=>
   previous.style.color=latestReview.outcome==='pass'?'#245a32':'#8b2f20';panel.append(previous);
   if(latestReview.reviewer_notes){const oldFeedback=document.createElement('p');oldFeedback.className='hint';oldFeedback.textContent='Previous annotator feedback: '+latestReview.reviewer_notes;panel.append(oldFeedback);}
  }
- const guide=document.createElement('p');guide.className='hint';guide.textContent='Enter an actual score from 0 to 100 for each criterion. The weight shows how much that criterion contributes to the final result. Savannah calculates the weighted overall score.';
+ const guide=document.createElement('p');guide.className='hint';guide.textContent='Every project starts with 100 points. Enter only the points to deduct for errors in each category. Savannah subtracts the deductions and calculates the final score automatically.';
  panel.append(guide);
- const header=document.createElement('div');header.style.display='grid';header.style.gridTemplateColumns='minmax(0,1fr) 88px 120px';header.style.gap='8px';header.style.alignItems='end';header.style.marginTop='12px';
+ const header=document.createElement('div');header.style.display='grid';header.style.gridTemplateColumns='minmax(0,1fr) 82px 112px 100px';header.style.gap='8px';header.style.alignItems='end';header.style.marginTop='12px';
  const criterionHead=document.createElement('strong');criterionHead.textContent='Quality criterion';
- const weightHead=document.createElement('strong');weightHead.textContent='Weight';
- const scoreHead=document.createElement('strong');scoreHead.textContent='Score / 100';
- header.append(criterionHead,weightHead,scoreHead);panel.append(header);
+ const availableHead=document.createElement('strong');availableHead.textContent='Points';
+ const deductionHead=document.createElement('strong');deductionHead.textContent='Deduct';
+ const earnedHead=document.createElement('strong');earnedHead.textContent='Earned';
+ header.append(criterionHead,availableHead,deductionHead,earnedHead);panel.append(header);
  const inputs=[];
  for(const c of criteria){
-  const row=document.createElement('div');row.style.display='grid';row.style.gridTemplateColumns='minmax(0,1fr) 88px 120px';row.style.gap='8px';row.style.alignItems='center';row.style.marginTop='10px';
+  const available=Number(c.weight);
+  const row=document.createElement('div');row.style.display='grid';row.style.gridTemplateColumns='minmax(0,1fr) 82px 112px 100px';row.style.gap='8px';row.style.alignItems='center';row.style.marginTop='10px';
   const label=document.createElement('label');label.textContent=c.name;
   if(c.description){const small=document.createElement('small');small.className='hint';small.textContent=c.description;label.append(small);}
-  const weight=document.createElement('span');weight.textContent=Number(c.weight)+'%';weight.style.fontWeight='600';
-  const score=document.createElement('input');score.type='number';score.min='0';score.max='100';score.step='1';score.required=true;score.inputMode='numeric';score.placeholder='0–100';score.setAttribute('aria-label','Score for '+c.name);score.style.cssText=qaInputStyle();
-  inputs.push({criterion_id:c.id,name:c.name,weight:Number(c.weight),score});
-  row.append(label,weight,score);panel.append(row);
+  const points=document.createElement('span');points.textContent=available+' pts';points.style.fontWeight='600';
+  const deduction=document.createElement('input');deduction.type='number';deduction.min='0';deduction.max=String(available);deduction.step='1';deduction.required=true;deduction.inputMode='numeric';deduction.value='0';deduction.setAttribute('aria-label','Points to deduct for '+c.name);deduction.style.cssText=qaInputStyle();
+  const earned=document.createElement('strong');earned.textContent=available+' pts';
+  inputs.push({criterion_id:c.id,name:c.name,weight:available,deduction,earned});
+  deduction.addEventListener('input',()=>{const d=Number(deduction.value);earned.textContent=Number.isFinite(d)&&d>=0&&d<=available?(available-d)+' pts':'—';updateTotal();updateFeedback();});
+  row.append(label,points,deduction,earned);panel.append(row);
  }
  const total=document.createElement('p');total.className='hint';total.style.marginTop='12px';
  function updateTotal(){
-  const complete=inputs.every(x=>x.score.value.trim()!==''&&Number.isFinite(Number(x.score.value))&&Number(x.score.value)>=0&&Number(x.score.value)<=100);
-  if(!complete){total.textContent='Weighted score preview: enter a score from 0 to 100 for every criterion.';return;}
-  const value=inputs.reduce((sum,x)=>sum+(Number(x.score.value)*x.weight/100),0);
-  total.textContent='Weighted score preview: '+value.toFixed(1)+'% · Final result is confirmed when you save.';
+  const complete=inputs.every(x=>x.deduction.value.trim()!==''&&Number.isFinite(Number(x.deduction.value))&&Number(x.deduction.value)>=0&&Number(x.deduction.value)<=x.weight);
+  if(!complete){total.textContent='Final score preview: enter a deduction within each category’s available points.';return;}
+  const earned=inputs.reduce((sum,x)=>sum+(x.weight-Number(x.deduction.value)),0);
+  total.textContent='Final score preview: '+earned.toFixed(0)+'/100 points ('+earned.toFixed(0)+'%).';
  }
- inputs.forEach(x=>x.score.addEventListener('input',updateTotal));updateTotal();panel.append(total);
- const feedbackLabel=document.createElement('label');feedbackLabel.textContent='Message to annotator';
- const feedback=document.createElement('textarea');feedback.rows=4;feedback.maxLength=2000;feedback.placeholder='Savannah will suggest feedback based on criteria scored below 100. You can edit it before saving.';feedback.style.cssText=qaInputStyle();
  function updateFeedback(){
-  const needs=inputs.filter(x=>x.score.value.trim()!==''&&Number(x.score.value)<100);
-  if(needs.length)feedback.value='Please review and improve: '+needs.map(x=>x.name+' (score '+Number(x.score.value)+'/100)').join('; ')+'.';
-  else if(inputs.every(x=>x.score.value.trim()!==''&&Number(x.score.value)===100))feedback.value='Good work. All reviewed criteria received 100/100.';
-  else feedback.value='';
+  const errors=inputs.filter(x=>x.deduction.value.trim()!==''&&Number(x.deduction.value)>0);
+  if(errors.length)feedback.value='Please correct the following: '+errors.map(x=>x.name+' (deducted '+Number(x.deduction.value)+' of '+x.weight+' points)').join('; ')+'.';
+  else feedback.value='No points deducted. All reviewed criteria met the required standard.';
  }
- inputs.forEach(x=>x.score.addEventListener('input',updateFeedback));
+ const feedbackLabel=document.createElement('label');feedbackLabel.textContent='Message to annotator';
+ const feedback=document.createElement('textarea');feedback.rows=4;feedback.maxLength=2000;feedback.placeholder='Savannah suggests feedback based on deductions. You can edit it before saving.';feedback.style.cssText=qaInputStyle();
+ inputs.forEach(x=>x.deduction.addEventListener('input',updateFeedback));
+ updateTotal();
  const save=document.createElement('button');save.type='button';save.className='btn';save.textContent='Save review';
  const status=document.createElement('p');status.className='hint';
  save.addEventListener('click',async()=>{
   save.disabled=true;status.textContent='Saving review…';
   try{
-   if(inputs.some(x=>x.score.value.trim()===''||!Number.isFinite(Number(x.score.value))||Number(x.score.value)<0||Number(x.score.value)>100))throw new Error('Enter a score from 0 to 100 for every criterion.');
-   const scores=inputs.map(x=>({criterion_id:x.criterion_id,score:Number(x.score.value)}));
+   if(inputs.some(x=>x.deduction.value.trim()===''||!Number.isFinite(Number(x.deduction.value))||Number(x.deduction.value)<0||Number(x.deduction.value)>x.weight))throw new Error('Enter a deduction between 0 and the available points for every category.');
+   const scores=inputs.map(x=>({criterion_id:x.criterion_id,score:((x.weight-Number(x.deduction.value))/x.weight)*100}));
    const {data,error:rpcError}=await callNeonRpc('submit_qa_review',{p_assignment_id:assignment.id,p_scores:scores,p_reviewer_notes:feedback.value.trim()||null});
    if(rpcError)throw rpcError;
    if(!data?.success)throw new Error(data?.error||'The review was not saved.');
-   status.textContent='Saved: '+Number(data.overall_score).toFixed(1)+'% · '+(data.outcome==='pass'?'PASS':'NEEDS REWORK');
+   status.textContent='Saved: '+Number(data.overall_score).toFixed(0)+'/100 · '+(data.outcome==='pass'?'PASS':'NEEDS REWORK');
    status.style.color=data.outcome==='pass'?'#245a32':'#8b2f20';
    onOutcome(data.outcome);
   }catch(err){status.textContent=err.message||'Unable to save the review.';save.disabled=false;}
  });
- panel.append(feedbackLabel,feedback,save,status);card.append(panel);
+ panel.append(total,feedbackLabel,feedback,save,status);card.append(panel);
 }
 
 function setMode(next) {
