@@ -505,7 +505,7 @@ async function renderClientQaRubric(project,user,card){
 }
 async function renderReviewerQaScore(assignment,project,card,user,onOutcome=()=>{}){
  const panel=document.createElement('section');panel.className='subpanel';panel.style.marginTop='14px';
- const heading=document.createElement('h4');heading.textContent='Simple quality check';panel.append(heading);
+ const heading=document.createElement('h4');heading.textContent='Quality score review';panel.append(heading);
  const {data:assigned,error}=await supabase.from('project_qa_rubrics')
   .select('rubric_version_id,qa_rubric_versions(id,version_number,pass_threshold,qa_rubrics(name),qa_rubric_criteria(id,name,description,weight,sort_order))')
   .eq('project_id',project.id).maybeSingle();
@@ -526,44 +526,51 @@ async function renderReviewerQaScore(assignment,project,card,user,onOutcome=()=>
   previous.style.color=latestReview.outcome==='pass'?'#245a32':'#8b2f20';panel.append(previous);
   if(latestReview.reviewer_notes){const oldFeedback=document.createElement('p');oldFeedback.className='hint';oldFeedback.textContent='Previous annotator feedback: '+latestReview.reviewer_notes;panel.append(oldFeedback);}
  }
- const inputs=[];
- const guide=document.createElement('p');guide.className='hint';guide.textContent='For each item, choose one option. You do not need to calculate percentages: Savannah calculates the final result.';
+ const guide=document.createElement('p');guide.className='hint';guide.textContent='Enter an actual score from 0 to 100 for each criterion. The weight shows how much that criterion contributes to the final result. Savannah calculates the weighted overall score.';
  panel.append(guide);
+ const header=document.createElement('div');header.style.display='grid';header.style.gridTemplateColumns='minmax(0,1fr) 88px 120px';header.style.gap='8px';header.style.alignItems='end';header.style.marginTop='12px';
+ const criterionHead=document.createElement('strong');criterionHead.textContent='Quality criterion';
+ const weightHead=document.createElement('strong');weightHead.textContent='Weight';
+ const scoreHead=document.createElement('strong');scoreHead.textContent='Score / 100';
+ header.append(criterionHead,weightHead,scoreHead);panel.append(header);
+ const inputs=[];
  for(const c of criteria){
-  const row=document.createElement('div');row.style.display='grid';row.style.gridTemplateColumns='minmax(0,1fr) minmax(170px,220px)';row.style.gap='8px';row.style.alignItems='center';row.style.marginTop='10px';
+  const row=document.createElement('div');row.style.display='grid';row.style.gridTemplateColumns='minmax(0,1fr) 88px 120px';row.style.gap='8px';row.style.alignItems='center';row.style.marginTop='10px';
   const label=document.createElement('label');label.textContent=c.name;
-  const select=document.createElement('select');select.required=true;select.style.cssText=qaInputStyle();
-  select.add(new Option('Choose result',''));
-  select.add(new Option('Meets requirements', '100'));
-  select.add(new Option('Partly meets - improve', '50'));
-  select.add(new Option('Does not meet - correct', '0'));
   if(c.description){const small=document.createElement('small');small.className='hint';small.textContent=c.description;label.append(small);}
-  inputs.push({criterion_id:c.id,name:c.name,weight:Number(c.weight),select});
-  row.append(label,select);panel.append(row);
+  const weight=document.createElement('span');weight.textContent=Number(c.weight)+'%';weight.style.fontWeight='600';
+  const score=document.createElement('input');score.type='number';score.min='0';score.max='100';score.step='1';score.required=true;score.inputMode='numeric';score.placeholder='0–100';score.setAttribute('aria-label','Score for '+c.name);score.style.cssText=qaInputStyle();
+  inputs.push({criterion_id:c.id,name:c.name,weight:Number(c.weight),score});
+  row.append(label,weight,score);panel.append(row);
  }
+ const total=document.createElement('p');total.className='hint';total.style.marginTop='12px';
+ function updateTotal(){
+  const complete=inputs.every(x=>x.score.value.trim()!==''&&Number.isFinite(Number(x.score.value))&&Number(x.score.value)>=0&&Number(x.score.value)<=100);
+  if(!complete){total.textContent='Weighted score preview: enter a score from 0 to 100 for every criterion.';return;}
+  const value=inputs.reduce((sum,x)=>sum+(Number(x.score.value)*x.weight/100),0);
+  total.textContent='Weighted score preview: '+value.toFixed(1)+'% · Final result is confirmed when you save.';
+ }
+ inputs.forEach(x=>x.score.addEventListener('input',updateTotal));updateTotal();panel.append(total);
  const feedbackLabel=document.createElement('label');feedbackLabel.textContent='Message to annotator';
- const feedback=document.createElement('textarea');feedback.rows=4;feedback.maxLength=2000;feedback.placeholder='Savannah will prepare feedback from the items marked for improvement. You can edit it before saving.';feedback.style.cssText=qaInputStyle();
+ const feedback=document.createElement('textarea');feedback.rows=4;feedback.maxLength=2000;feedback.placeholder='Savannah will suggest feedback based on criteria scored below 100. You can edit it before saving.';feedback.style.cssText=qaInputStyle();
  function updateFeedback(){
-  const needs=inputs.filter(x=>x.select.value==='0');
-  const partial=inputs.filter(x=>x.select.value==='50');
-  const lines=[];
-  if(needs.length)lines.push('Please correct: '+needs.map(x=>x.name).join(', ')+'.');
-  if(partial.length)lines.push('Please improve: '+partial.map(x=>x.name).join(', ')+'.');
-  if(!lines.length&&inputs.every(x=>x.select.value==='100'))lines.push('Good work. All reviewed criteria meet the required standard.');
-  feedback.value=lines.join('\n');
+  const needs=inputs.filter(x=>x.score.value.trim()!==''&&Number(x.score.value)<100);
+  if(needs.length)feedback.value='Please review and improve: '+needs.map(x=>x.name+' (score '+Number(x.score.value)+'/100)').join('; ')+'.';
+  else if(inputs.every(x=>x.score.value.trim()!==''&&Number(x.score.value)===100))feedback.value='Good work. All reviewed criteria received 100/100.';
+  else feedback.value='';
  }
- inputs.forEach(x=>x.select.addEventListener('change',updateFeedback));
+ inputs.forEach(x=>x.score.addEventListener('input',updateFeedback));
  const save=document.createElement('button');save.type='button';save.className='btn';save.textContent='Save review';
  const status=document.createElement('p');status.className='hint';
  save.addEventListener('click',async()=>{
   save.disabled=true;status.textContent='Saving review…';
   try{
-   if(inputs.some(x=>x.select.value===''))throw new Error('Choose a result for every item before saving.');
-   const scores=inputs.map(x=>({criterion_id:x.criterion_id,score:Number(x.select.value)}));
+   if(inputs.some(x=>x.score.value.trim()===''||!Number.isFinite(Number(x.score.value))||Number(x.score.value)<0||Number(x.score.value)>100))throw new Error('Enter a score from 0 to 100 for every criterion.');
+   const scores=inputs.map(x=>({criterion_id:x.criterion_id,score:Number(x.score.value)}));
    const {data,error:rpcError}=await callNeonRpc('submit_qa_review',{p_assignment_id:assignment.id,p_scores:scores,p_reviewer_notes:feedback.value.trim()||null});
    if(rpcError)throw rpcError;
    if(!data?.success)throw new Error(data?.error||'The review was not saved.');
-   status.textContent='Saved: '+Number(data.overall_score).toFixed(0)+'% · '+(data.outcome==='pass'?'PASS':'NEEDS REWORK');
+   status.textContent='Saved: '+Number(data.overall_score).toFixed(1)+'% · '+(data.outcome==='pass'?'PASS':'NEEDS REWORK');
    status.style.color=data.outcome==='pass'?'#245a32':'#8b2f20';
    onOutcome(data.outcome);
   }catch(err){status.textContent=err.message||'Unable to save the review.';save.disabled=false;}
