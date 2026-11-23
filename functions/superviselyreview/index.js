@@ -72,6 +72,7 @@ async function supervisely(path, body, apiHeaders) {
   return data?.data ?? data;
 }
 function countLabels(annotation) {
+  if (Array.isArray(annotation?.frames)) return annotation.frames.reduce((total, frame) => total + (Array.isArray(frame?.figures) ? frame.figures.length : 0), 0);
   if (Array.isArray(annotation?.objects)) return annotation.objects.length;
   if (Array.isArray(annotation?.labels)) return annotation.labels.length;
   if (Array.isArray(annotation?.figures)) return annotation.figures.length;
@@ -129,8 +130,9 @@ export default {
 
       const externalProjectId = String(body.external_project_id || '').trim();
       const datasetId = String(body.external_dataset_id || '').trim();
-      const mediaType = String(body.media_type || 'image').toLowerCase() === 'pointcloud' ? 'pointcloud' : 'image';
-      const mediaId = String(body.external_image_id || body.external_pointcloud_id || '').trim();
+      const requestedMediaType = String(body.media_type || 'image').toLowerCase();
+      const mediaType = ['pointcloud', 'video'].includes(requestedMediaType) ? requestedMediaType : 'image';
+      const mediaId = String(body.external_video_id || body.external_image_id || body.external_pointcloud_id || '').trim();
       if (!/^\d+$/.test(externalProjectId) || !/^\d+$/.test(datasetId) || !/^\d+$/.test(mediaId)) {
         return response({ error: 'Enter numeric Supervisely project, dataset and image/point-cloud IDs.' }, 400, cors);
       }
@@ -168,6 +170,32 @@ export default {
         height = Number(info.height) || Number(annotation.size?.height) || null;
         annotationCreatedAt = annotationInfo.createdAt || null;
         annotationUpdatedAt = annotationInfo.updatedAt || info.updatedAt || null;
+      } else if (mediaType === 'video') {
+        info = await supervisely('videos.info', { id: Number(mediaId), forceMetadataForLinks: true }, apiHeaders);
+        if (String(info.datasetId) !== datasetId || String(info.projectId) !== externalProjectId) {
+          return response({ error: 'The selected video does not belong to the supplied Supervisely dataset/project.' }, 409, cors);
+        }
+        const annotationList = await supervisely('videos.annotations.bulk.info', {
+          videoIds: [Number(mediaId)], forceMetadataForLinks: true, integerCoords: false
+        }, apiHeaders);
+        annotation = Array.isArray(annotationList) ? annotationList[0] : annotationList;
+        if (!annotation || typeof annotation !== 'object' || !Array.isArray(annotation.frames)) {
+          return response({ error: 'Supervisely returned video details but no saved frame annotations.' }, 502, cors);
+        }
+        const download = await fetch(SUPERVISELY_API + '/videos.download', {
+          method: 'POST', headers: apiHeaders, body: JSON.stringify({ id: Number(mediaId) })
+        });
+        if (!download.ok) throw new Error(`Supervisely video download failed (${download.status}).`);
+        bytes = new Uint8Array(await download.arrayBuffer());
+        name = safeName(info.name, `video-${mediaId}.mp4`);
+        mime = String(info.fileMeta?.mime || info.mime || 'video/mp4').toLowerCase();
+        if (!new Set(['video/mp4', 'video/webm', 'video/quicktime', 'video/x-msvideo', 'video/x-matroska']).has(mime)) {
+          return response({ error: 'The selected video format is not supported for review.' }, 415, cors);
+        }
+        width = Number(info.fileMeta?.width || info.frameWidth) || Number(annotation.size?.width) || null;
+        height = Number(info.fileMeta?.height || info.frameHeight) || Number(annotation.size?.height) || null;
+        annotationCreatedAt = annotation.createdAt || null;
+        annotationUpdatedAt = annotation.updatedAt || info.updatedAt || null;
       } else {
         info = await supervisely('point-clouds.info', { id: Number(mediaId) }, apiHeaders);
         if (String(info.datasetId) !== datasetId || String(info.projectId) !== externalProjectId) {
@@ -187,8 +215,8 @@ export default {
         mime = info.cloudMime || 'application/octet-stream';
       }
 
-      if (!bytes?.length || bytes.length > 20 * 1024 * 1024) {
-        return response({ error: 'The source media is empty or exceeds the 20 MB review limit.' }, 413, cors);
+      if (!bytes?.length || bytes.length > 100 * 1024 * 1024) {
+        return response({ error: 'The source media is empty or exceeds the 100 MB review limit.' }, 413, cors);
       }
       const storageKey = `${body.project_id}/supervisely-${mediaType}-${mediaId}-${name}`;
       const upload = await fetch(sign('PUT', storageKey, mime, 600), {
@@ -231,7 +259,7 @@ export default {
       }
       return response({
         success: true, annotation: saved?.[0] || saved, assignment: updated[0],
-        message: mediaType === 'image' ? 'Image and annotation submitted for review.' : 'Point cloud and annotation submitted for review.'
+        message: mediaType === 'image' ? 'Image and annotation submitted for review.' : mediaType === 'video' ? 'Video and frame annotations submitted for review.' : 'Point cloud and annotation submitted for review.'
       }, 200, cors);
     } catch (error) {
       console.error('Savannah Supervisely review error:', error);
