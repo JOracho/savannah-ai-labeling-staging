@@ -2,6 +2,11 @@ name: Deploy superviselyreview to Neon
 
 on:
   workflow_dispatch:
+  push:
+    branches: ["main"]
+    paths:
+      - "functions/superviselyreview/**"
+      - ".github/workflows/deploy-superviselyreview.yml"
 
 permissions:
   contents: read
