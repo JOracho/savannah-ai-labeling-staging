@@ -43,7 +43,7 @@ a{color:inherit}.topbar{background:var(--green);color:#fff;padding:14px 0}.wrap{
   <section id="teamLeadPanel" class="panel hidden" style="margin-bottom:22px"><div class="eyebrow">Savannah operations</div><h2 style="color:var(--green);font: bold 26px Georgia,serif;margin:8px 0">Team lead workspace</h2><p class="muted">Only assignments explicitly allocated to your team lead account are shown here. This workspace does not provide client account or administrator controls.</p><div id="teamLeadMessage" class="notice hidden" role="status"></div><div id="teamLeadStats" class="stats"></div><div id="teamLeadAssignments" class="project-list"><p class="muted">Loading your team assignments…</p></div></section>
   <section id="reviewerPanel" class="panel hidden" style="margin-bottom:22px">
     <div class="eyebrow">Savannah quality assurance</div>
-    <h2 style="color:var(--green);font: bold 26px Georgia,serif;margin:8px 0">Reviewer workspace</h2>
+    <h2 style="color:var(--green);font: bold 26px Georgia,serif;margin:8px 0">QA/QC workspace</h2>
     <p class="muted">Review submitted annotation assignments, confirm completion, or return work for corrections. This role cannot change client projects, accounts, or integrations.</p>
     <div id="reviewerMessage" class="notice hidden" role="status"></div>
     <div id="reviewerQueue" class="project-list"><p class="muted">Loading submitted assignments…</p></div>
@@ -136,12 +136,12 @@ a{color:inherit}.topbar{background:var(--green);color:#fff;padding:14px 0}.wrap{
         <button class="btn" id="promoteAnnotatorButton" type="submit">Activate annotator account</button>
       </form>
       <div id="annotatorAdminMessage" class="notice hidden" role="status"></div>
-      <h4 style="margin:18px 0 8px;color:var(--green)">Activate a reviewer</h4>
-      <p class="muted">The reviewer must first create a Savannah account. Enter their registered email to grant review-only access.</p>
+      <h4 style="margin:18px 0 8px;color:var(--green)">Activate a QA/QC manager</h4>
+      <p class="muted">The QA/QC manager must first create a Savannah account. Enter their registered email to grant quality-review access.</p>
       <form id="promoteReviewerForm">
-        <label for="reviewerEmail">Reviewer account email</label>
-        <input id="reviewerEmail" type="email" required placeholder="reviewer@example.com">
-        <button class="btn secondary" id="promoteReviewerButton" type="submit">Activate reviewer account</button>
+        <label for="reviewerEmail">QA/QC manager account email</label>
+        <input id="reviewerEmail" type="email" required placeholder="qaqc@example.com">
+        <button class="btn secondary" id="promoteReviewerButton" type="submit">Activate QA/QC account</button>
       </form>
       <div id="reviewerAdminMessage" class="notice hidden" role="status"></div>
       <h4 style="margin:18px 0 8px;color:var(--green)">Activate a team lead</h4><p class="muted">The team lead must first create a Savannah account. Enter their registered email to grant access to assignments allocated to them.</p><form id="promoteTeamLeadForm"><label for="teamLeadEmail">Team lead account email</label><input id="teamLeadEmail" type="email" required placeholder="teamlead@example.com"><button class="btn secondary" id="promoteTeamLeadButton" type="submit">Activate team lead account</button></form><div id="teamLeadAdminMessage" class="notice hidden" role="status"></div>
@@ -693,7 +693,7 @@ $('promoteReviewerForm').addEventListener('submit',async(e)=>{
   const {data,error}=await supabase.functions.invoke('manage-annotators',{body:{action:'promote_reviewer',email:$('reviewerEmail').value.trim()}});
   if(error)throw error;
   if(!data?.success)throw new Error(data?.error||'Unable to activate this reviewer account.');
-  message('reviewerAdminMessage',data.message||'Reviewer access activated. Ask the user to sign out and back in.','success');
+  message('reviewerAdminMessage',data.message||'QA/QC access activated. Ask the user to sign out and back in.','success');
   $('reviewerEmail').value='';
  }catch(err){message('reviewerAdminMessage',err.message||'Unable to activate reviewer access.','error');}
  finally{button.disabled=false;}
@@ -1430,7 +1430,7 @@ async function loadTeamLeadDashboard(user){
 }
 
 async function loadReviewerDashboard(user){
- $('dashboardEyebrow').textContent='Savannah reviewer portal';
+ $('dashboardEyebrow').textContent='Savannah QA/QC portal';
  $('welcomeTitle').textContent='Review submissions';
  $('dashboardStats').classList.add('hidden');
  $('projects').classList.add('hidden');
