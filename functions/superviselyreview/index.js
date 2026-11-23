@@ -194,6 +194,11 @@ export default {
         }
         width = Number(info.fileMeta?.width || info.frameWidth) || Number(annotation.size?.width) || null;
         height = Number(info.fileMeta?.height || info.frameHeight) || Number(annotation.size?.height) || null;
+        annotation.savannahVideoMeta = {
+          fps: Number(info.fileMeta?.fps || info.fileMeta?.frameRate) || null,
+          duration: Number(info.fileMeta?.duration) || null,
+          framesCount: Number(info.fileMeta?.framesCount || annotation.framesCount) || null
+        };
         annotationCreatedAt = annotation.createdAt || null;
         annotationUpdatedAt = annotation.updatedAt || info.updatedAt || null;
       } else {
