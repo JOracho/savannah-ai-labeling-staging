@@ -38,6 +38,28 @@ a{color:inherit}.topbar{background:var(--green);color:#fff;padding:14px 0}.wrap{
 </section>
 <section id="dashboard" class="hidden">
   <div class="dashboard-head"><div><div class="eyebrow" id="dashboardEyebrow">Client dashboard</div><h2 id="welcomeTitle">Your projects</h2><p class="muted" id="welcomeEmail"></p></div><button class="btn secondary" id="signOut" type="button">Sign out</button></div>
+  <section id="clientRequestPanel" class="panel hidden" style="margin:18px 0">
+    <div class="eyebrow">New project intake</div><h3 style="color:var(--green);font: bold 24px Georgia,serif;margin:6px 0">Submit a new project</h3>
+    <p class="muted">Submit your requirements for review. A request is not an active project; Savannah will confirm scope and next steps before work begins.</p>
+    <form id="clientProjectRequestForm">
+      <label for="requestContactName">Your name</label><input id="requestContactName" maxlength="120" required autocomplete="name">
+      <label for="requestContactEmail">Contact email</label><input id="requestContactEmail" type="email" maxlength="254" required autocomplete="email">
+      <label for="requestCompany">Company (optional)</label><input id="requestCompany" maxlength="160" autocomplete="organization">
+      <label for="requestProjectTitle">Project name</label><input id="requestProjectTitle" maxlength="160" required placeholder="e.g. Road-scene LiDAR cuboid annotation">
+      <label for="requestServiceType">Annotation service</label><select id="requestServiceType" required style="width:100%;padding:12px;border:1px solid #d7d9d2;border-radius:4px;font:inherit">
+        <option value="">Choose a service</option><option>Image Annotation</option><option>Video Annotation</option><option>Bounding Box Annotation</option><option>Polygon Annotation</option><option>Semantic Segmentation</option><option>LiDAR / 3D Point Cloud Annotation</option><option>Object Tracking</option><option>Content Moderation</option><option>LLM Data Annotation &amp; Evaluation</option><option>RLHF / Human Preference Ranking</option><option>Data Quality Assurance</option><option>Other</option></select>
+      <label for="requestDataType">Data format or type</label><input id="requestDataType" maxlength="160" placeholder="e.g. PCD, KITTI .bin, images, MP4, JSON">
+      <label for="requestVolume">Estimated volume</label><input id="requestVolume" maxlength="160" placeholder="e.g. 10,000 frames, 250,000 objects">
+      <label for="requestDeadline">Target deadline (optional)</label><input id="requestDeadline" type="date">
+      <label for="requestDatasetLink">Secure dataset link (optional)</label><input id="requestDatasetLink" type="url" maxlength="1000" placeholder="https://…">
+      <p class="hint">Provide a restricted HTTPS share link if ready. Do not paste passwords or API keys. Direct file upload is not enabled yet.</p>
+      <label for="requestToolPreference">Preferred annotation workspace</label><select id="requestToolPreference" required style="width:100%;padding:12px;border:1px solid #d7d9d2;border-radius:4px;font:inherit"><option value="Savannah-managed workspace (Supervisely or CVAT)">Savannah-managed workspace (Supervisely or CVAT)</option><option value="Client-owned workspace (BYOT)">Client-owned workspace (BYOT)</option><option value="Discuss with Savannah">Discuss with Savannah</option></select>
+      <label for="requestBrief">Project brief, annotation instructions and quality requirements</label><textarea id="requestBrief" rows="4" maxlength="5000" required style="width:100%;padding:12px;border:1px solid #d7d9d2;border-radius:4px;font:inherit" placeholder="Describe the task, object classes, labeling rules, expected output and quality requirements."></textarea>
+      <button class="btn" id="submitClientProjectRequest" type="submit" style="margin-top:16px">Submit project request</button>
+    </form>
+    <div id="clientRequestMessage" class="notice hidden" role="status"></div><h4 style="color:var(--green);margin:22px 0 8px">Your project requests</h4>
+    <div id="clientProjectRequests" class="project-list"><p class="muted">Loading your requests…</p></div>
+  </section>
   <div class="stats" id="dashboardStats"><div class="stat"><strong id="totalProjects">0</strong><span>Total projects</span></div><div class="stat"><strong id="activeProjects">0</strong><span>Active projects</span></div><div class="stat"><strong id="completedProjects">0</strong><span>Completed projects</span></div></div>
   <div id="dashboardMessage" class="notice hidden" role="status"></div>
   <section id="teamLeadPanel" class="panel hidden" style="margin-bottom:22px"><div class="eyebrow">Savannah operations</div><h2 style="color:var(--green);font: bold 26px Georgia,serif;margin:8px 0">Team lead workspace</h2><p class="muted">Only assignments explicitly allocated to your team lead account are shown here. This workspace does not provide client account or administrator controls.</p><div id="teamLeadMessage" class="notice hidden" role="status"></div><div id="teamLeadStats" class="stats"></div><div id="teamLeadAssignments" class="project-list"><p class="muted">Loading your team assignments…</p></div></section>
@@ -50,6 +72,10 @@ a{color:inherit}.topbar{background:var(--green);color:#fff;padding:14px 0}.wrap{
   </section>
   <section id="adminPanel" class="panel hidden" style="margin-bottom:22px">
     <div class="eyebrow">Savannah administration</div>
+    <section class="subpanel" style="margin:18px 0"><h3 style="color:var(--green);font: bold 24px Georgia,serif;margin:0 0 6px">Incoming project requests</h3>
+      <p class="muted">Review client submissions before creating or activating an annotation project. Accepting a request does not automatically create a Supervisely or CVAT project.</p>
+      <div id="adminProjectRequests" class="project-list"><p class="muted">Loading incoming requests…</p></div><div id="adminProjectRequestsMessage" class="notice hidden" role="status"></div>
+    </section>
     <section class="subpanel" style="margin:18px 0">
       <h4>Create a Supervisely project</h4>
       <p class="muted">Creates a new image project in Savannah's Supervisely workspace and adds its access link to the selected client account in this portal. Leave Client account UUID blank to create a test project under your administrator account.</p>
@@ -648,6 +674,43 @@ $('resendVerification').addEventListener('click',async()=>{
  }catch(err){message('authMessage',err.message||'Unable to resend the verification code.','error');}
  finally{$('resendVerification').disabled=false;}
 });
+
+function requestStatusLabel(s){return ({submitted:'Submitted',reviewing:'Under review',quoted:'Quote sent',accepted:'Accepted',declined:'Declined',converted:'Converted to project'})[s]||s||'Unknown';}
+function requestDate(v){if(!v)return 'Not specified';const d=new Date(v+(String(v).length===10?'T00:00:00':''));return Number.isNaN(d.getTime())?'Not specified':d.toLocaleDateString();}
+function requestDetail(label,value){const p=document.createElement('p');p.style.margin='5px 0';const b=document.createElement('strong');b.textContent=label+': ';const s=document.createElement('span');s.textContent=value||'Not provided';p.append(b,s);return p;}
+async function loadClientProjectRequests(user){
+ const root=$('clientProjectRequests');root.replaceChildren();
+ const {data,error}=await supabase.from('project_requests').select('id,project_title,service_type,estimated_volume,target_deadline,status,created_at').eq('submitted_by',user.id).order('created_at',{ascending:false});
+ if(error)throw error;
+ if(!data?.length){const p=document.createElement('p');p.className='muted';p.textContent='You have not submitted any project requests yet.';root.append(p);return;}
+ for(const r of data){const card=document.createElement('article');card.className='subpanel';const head=document.createElement('div');head.className='project-top';const title=document.createElement('strong');title.textContent=r.project_title;const status=document.createElement('span');status.className='pill';status.textContent=requestStatusLabel(r.status);head.append(title,status);card.append(head,requestDetail('Service',r.service_type),requestDetail('Volume',r.estimated_volume),requestDetail('Deadline',requestDate(r.target_deadline)));const note=document.createElement('p');note.className='hint';note.textContent=r.status==='accepted'?'Accepted. Savannah will confirm project setup and next steps.':r.status==='declined'?'This request has been closed. Contact your project representative for clarification.':r.status==='converted'?'This request has been converted into a Savannah project.':'This request is being reviewed and is not yet an active annotation project.';card.append(note);root.append(card);}
+}
+async function loadAdminProjectRequests(){
+ const root=$('adminProjectRequests');root.replaceChildren();
+ const {data,error}=await supabase.from('project_requests').select('id,contact_name,contact_email,company,project_title,service_type,data_type,estimated_volume,target_deadline,project_brief,status,created_at').order('created_at',{ascending:false});
+ if(error)throw error;
+ if(!data?.length){const p=document.createElement('p');p.className='muted';p.textContent='No client project requests have been submitted yet.';root.append(p);return;}
+ for(const r of data){
+  const card=document.createElement('article');card.className='subpanel';const head=document.createElement('div');head.className='project-top';const title=document.createElement('strong');title.textContent=r.project_title;const status=document.createElement('span');status.className='pill';status.textContent=requestStatusLabel(r.status);head.append(title,status);card.append(head);
+  card.append(requestDetail('Client',r.contact_name+' · '+r.contact_email));if(r.company)card.append(requestDetail('Company',r.company));card.append(requestDetail('Service',r.service_type),requestDetail('Data type',r.data_type),requestDetail('Estimated volume',r.estimated_volume),requestDetail('Deadline',requestDate(r.target_deadline)));
+  const brief=document.createElement('div');brief.style.whiteSpace='pre-wrap';brief.style.background='#fff';brief.style.border='1px solid #e7e3d8';brief.style.borderRadius='6px';brief.style.padding='12px';brief.style.marginTop='10px';brief.textContent=r.project_brief;card.append(brief);
+  const meta=document.createElement('p');meta.className='hint';meta.textContent='Received '+new Date(r.created_at).toLocaleString()+' · Request '+r.id;card.append(meta);
+  const controls=document.createElement('div');controls.style.display='flex';controls.style.flexWrap='wrap';controls.style.gap='8px';controls.style.alignItems='center';controls.style.marginTop='12px';const select=document.createElement('select');select.setAttribute('aria-label','Update request status');select.style.padding='10px';select.style.border='1px solid #d7d9d2';select.style.borderRadius='4px';select.style.font='inherit';
+  for(const [v,l] of [['submitted','Submitted'],['reviewing','Under review'],['quoted','Quote sent'],['accepted','Accepted'],['declined','Declined']]){const o=document.createElement('option');o.value=v;o.textContent=l;select.append(o);}select.value=r.status;
+  const save=document.createElement('button');save.type='button';save.className='btn secondary';save.textContent='Update request status';save.addEventListener('click',async()=>{save.disabled=true;try{const {data:updated,error:ue}=await supabase.from('project_requests').update({status:select.value}).eq('id',r.id).eq('status',r.status).select('id,status').maybeSingle();if(ue)throw ue;if(!updated)throw new Error('This request changed since it was loaded. Refresh and try again.');message('adminProjectRequestsMessage','Request status updated to '+requestStatusLabel(updated.status)+'.','success');await loadAdminProjectRequests();}catch(e){message('adminProjectRequestsMessage',e.message||'Unable to update request status.','error');save.disabled=false;}});controls.append(select,save);card.append(controls);root.append(card);
+ }
+}
+$('clientProjectRequestForm').addEventListener('submit',async(event)=>{
+ event.preventDefault();const button=$('submitClientProjectRequest');button.disabled=true;
+ try{const user=currentPortalUser;if(!user||user.app_metadata?.role!=='client')throw new Error('Sign in with a client account to submit a project request.');
+  const email=$('requestContactEmail').value.trim(),link=$('requestDatasetLink').value.trim();if(link){const parsed=new URL(link);if(parsed.protocol!=='https:')throw new Error('Dataset links must use HTTPS.');}
+  const brief=['Project instructions and quality requirements:\n'+$('requestBrief').value.trim(),'Dataset link (restricted HTTPS): '+(link||'Not supplied yet; coordinate secure transfer with Savannah.'),'Preferred annotation workspace: '+$('requestToolPreference').value].join('\n\n');
+  const payload={submitted_by:user.id,contact_name:$('requestContactName').value.trim(),contact_email:email,company:$('requestCompany').value.trim()||null,project_title:$('requestProjectTitle').value.trim(),service_type:$('requestServiceType').value,data_type:$('requestDataType').value.trim()||null,estimated_volume:$('requestVolume').value.trim()||null,target_deadline:$('requestDeadline').value||null,project_brief:brief};
+  const {data,error}=await supabase.from('project_requests').insert(payload).select('id').single();if(error)throw error;
+  $('clientProjectRequestForm').reset();$('requestContactEmail').value=user.email||email;$('requestContactName').value=user.user_metadata?.full_name||user.name||'';
+  message('clientRequestMessage','Project request submitted. Reference: '+data.id+'. Savannah will review it before annotation work begins.','success');await loadClientProjectRequests(user);
+ }catch(e){message('clientRequestMessage',e.message||'Unable to submit your project request.','error');}finally{button.disabled=false;}
+});
 function labelStatus(s){return ({project_submitted:'Project submitted',data_received:'Data received',data_verified:'Data verified',annotation_in_progress:'Annotation in progress',quality_assurance:'Quality assurance',client_review:'Client review',revision_required:'Revision required',completed:'Completed',delivered:'Delivered',on_hold:'On hold'})[s]||s;}
 let adminProjects=[];
 let annotatorAccounts=[];
@@ -1238,6 +1301,7 @@ async function loadAdminPanel(){
  const {data,error}=await supabase.from('projects').select('id,project_code,title,client_user_id,service_type,description,annotation_tool,annotation_workspace_url,tool_access_mode,external_tool_name,status,progress_percent,due_date,created_at').order('created_at',{ascending:false});
  if(error) throw error;
  adminProjects=data||[];
+ try{await loadAdminProjectRequests();}catch(err){message('adminProjectRequestsMessage','Unable to load project requests: '+err.message,'error');}
  populateCvatProjectOptions();
  const annotationProjectSelect=$('annotationReviewProject');
  annotationProjectSelect.replaceChildren();
@@ -1556,8 +1620,8 @@ async function showDashboard(user, forceRefresh=false){
  if(isAnnotator){await loadAnnotatorDashboard(user);return;}
  if(isReviewer){await loadReviewerDashboard(user);return;}
  if(isTeamLead){await loadTeamLeadDashboard(user);return;}
- if(isAdmin){try{await loadAdminPanel();}catch(e){message('adminMessage','Unable to load admin projects: '+e.message,'error');}}
- else {$('adminPanel').classList.add('hidden');}
+ if(isAdmin){$('clientRequestPanel').classList.add('hidden');try{await loadAdminPanel();}catch(e){message('adminMessage','Unable to load admin projects: '+e.message,'error');}}
+ else {$('adminPanel').classList.add('hidden');$('clientRequestPanel').classList.toggle('hidden',userRole!=='client');if(userRole==='client'){$('requestContactEmail').value=user.email||'';$('requestContactName').value=user.user_metadata?.full_name||user.name||'';try{await loadClientProjectRequests(user);}catch(e){message('clientRequestMessage','Unable to load your project requests: '+e.message,'error');}}}
  let list=[];
  if(isAdmin){
    list=adminProjects;
