@@ -1,0 +1,41 @@
+name: Build Neon publicforms bundle
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout staging repository
+        uses: actions/checkout@v4
+      - name: Set up Node.js 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Build bundled function
+        run: |
+          mkdir -p publicforms-build
+          cat > publicforms-build/package.json <<'EOF'
+          {
+            "type": "module",
+            "dependencies": {
+              "@neon/functions": "0.11.0",
+              "pg": "^8.16.3"
+            }
+          }
+          EOF
+          cp publicforms-source.js publicforms-build/index.js
+          cd publicforms-build
+          npm install --omit=dev --ignore-scripts --no-audit --no-fund
+          npx --yes esbuild index.js --bundle --platform=node --target=node24 --format=esm --packages=bundle --outfile=index.mjs
+          zip -j publicforms.zip index.mjs
+      - name: Upload build ZIP
+        uses: actions/upload-artifact@v4
+        with:
+          name: publicforms-neon-bundle
+          path: publicforms-build/publicforms.zip
+          retention-days: 3
