@@ -728,7 +728,7 @@ async function loadAdminAnnotatorApplications(){
   const title=document.createElement('strong');title.textContent=item.full_name+' · '+item.experience_area;
   const pill=document.createElement('span');pill.className='pill';pill.textContent=item.status||'received';head.append(title,pill);card.append(head);
   card.append(requestDetail('Email',item.email));
-  if(item.portfolio_url){const p=document.createElement('p');p.style.margin='5px 0';const a=document.createElement('a');a.href=item.portfolio_url;a.target='_blank';a.rel='noopener noreferrer';a.textContent='Open portfolio';a.style.color='var(--green)';p.append(a);card.append(p);}
+  if(item.portfolio_url){const p=document.createElement('p');p.style.margin='5px 0';try{const link=new URL(item.portfolio_url);if(link.protocol==='https:'){const a=document.createElement('a');a.href=link.href;a.target='_blank';a.rel='noopener noreferrer';a.textContent='Open portfolio';a.style.color='var(--green)';p.append(a);}else{p.textContent='Portfolio: '+item.portfolio_url;}}catch{p.textContent='Portfolio: '+item.portfolio_url;}card.append(p);}
   const summary=document.createElement('div');summary.style.cssText='white-space:pre-wrap;background:#fff;border:1px solid #e7e3d8;border-radius:6px;padding:12px;margin-top:10px';summary.textContent=item.experience_summary||'No additional details supplied';card.append(summary);
   card.append(requestDetail('CV',item.cv_storage_path?'Stored in private portal storage':(item.admin_notes||'Check the FormSubmit email attachment')));
   const meta=document.createElement('p');meta.className='hint';meta.textContent='Received '+new Date(item.created_at).toLocaleString();card.append(meta);
