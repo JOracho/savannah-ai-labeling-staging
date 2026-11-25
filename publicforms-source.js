@@ -68,34 +68,50 @@ function extractSubmission(payload) {
 }
 
 function text(value, max = 10_000) { return String(value ?? "").trim().slice(0, max); }
-function json(body, status = 200) {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { "content-type": "application/json; charset=utf-8", "cache-control": "no-store" },
-  });
+const allowedOrigin = "https://joracho.github.io";
+function json(body, status = 200, origin = "") {
+  const headers = { "content-type": "application/json; charset=utf-8", "cache-control": "no-store", "vary": "Origin" };
+  if (origin === allowedOrigin) {
+    headers["access-control-allow-origin"] = allowedOrigin;
+    headers["access-control-allow-methods"] = "POST, OPTIONS";
+    headers["access-control-allow-headers"] = "content-type";
+  }
+  return new Response(JSON.stringify(body), { status, headers });
 }
 
 export default {
   async fetch(request) {
-    if (request.method !== "POST") return json({ ok: false, error: "Method not allowed" }, 405);
+    const origin = request.headers.get("origin") || "";
     const parts = new URL(request.url).pathname.split("/").filter(Boolean);
     if (parts.length !== 2 || parts[0] !== "formsubmit" || !safeEqual(parts[1], webhookToken)) {
-      return json({ ok: false, error: "Unauthorized" }, 401);
+      return json({ ok: false, error: "Unauthorized" }, 401, origin);
     }
+    if (origin && origin !== allowedOrigin) return json({ ok: false, error: "Origin not allowed" }, 403);
+    if (request.method === "OPTIONS") {
+      if (origin !== allowedOrigin) return new Response(null, { status: 403 });
+      return new Response(null, { status: 204, headers: {
+        "access-control-allow-origin": allowedOrigin,
+        "access-control-allow-methods": "POST, OPTIONS",
+        "access-control-allow-headers": "content-type",
+        "access-control-max-age": "86400",
+        "vary": "Origin",
+      }});
+    }
+    if (request.method !== "POST") return json({ ok: false, error: "Method not allowed" }, 405, origin);
     let client;
     try {
       const { payload, rawForHash } = await readPayload(request);
       const submission = extractSubmission(payload);
       const eventHeader = (request.headers.get("x-formsubmit-event") || "").toLowerCase();
-      if (eventHeader === "test" || submission?.event === "test") return json({ ok: true, received: "test" });
-      if (!submission) return json({ ok: false, error: "No submission fields found" }, 400);
+      if (eventHeader === "test" || submission?.event === "test") return json({ ok: true, received: "test" }, 200, origin);
+      if (!submission) return json({ ok: false, error: "No submission fields found" }, 400, origin);
 
       const f = submission.fields;
       const name = text(f.name ?? f.full_name, 200);
       const email = text(f.email, 320).toLowerCase();
       const message = text(f.message ?? f.experience_summary, 10_000);
       if (!name || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || !message) {
-        return json({ ok: false, error: "Required name, valid email, or message is missing" }, 400);
+        return json({ ok: false, error: "Required name, valid email, or message is missing" }, 400, origin);
       }
       const isAnnotator = Boolean(f.experience || f.resume || submission.formName.includes("annotator") || f.portfolio);
       const submissionType = isAnnotator ? "annotator" : "client";
@@ -111,13 +127,13 @@ export default {
       );
       if (eventInsert.rowCount === 0) {
         await client.query("COMMIT");
-        return json({ ok: true, duplicate: true });
+        return json({ ok: true, duplicate: true }, 200, origin);
       }
       if (isAnnotator) {
         const experienceArea = text(f.experience ?? f.experience_area, 200);
         if (!experienceArea) {
           await client.query("ROLLBACK");
-          return json({ ok: false, error: "Annotator experience area is missing" }, 400);
+          return json({ ok: false, error: "Annotator experience area is missing" }, 400, origin);
         }
         await client.query(
           `INSERT INTO public.annotator_applications
@@ -129,7 +145,7 @@ export default {
         const service = text(f.service, 200);
         if (!service) {
           await client.query("ROLLBACK");
-          return json({ ok: false, error: "Client service selection is missing" }, 400);
+          return json({ ok: false, error: "Client service selection is missing" }, 400, origin);
         }
         await client.query(
           `INSERT INTO public.client_inquiries (name, email, company, service, message)
@@ -138,11 +154,11 @@ export default {
         );
       }
       await client.query("COMMIT");
-      return json({ ok: true, received: submissionType });
+      return json({ ok: true, received: submissionType }, 200, origin);
     } catch (error) {
       if (client) { try { await client.query("ROLLBACK"); } catch { /* keep original error */ } }
       console.error("publicforms processing failed:", error?.message || "unknown error");
-      return json({ ok: false, error: "Webhook processing failed" }, 500);
+      return json({ ok: false, error: "Webhook processing failed" }, 500, origin);
     } finally { client?.release(); }
   },
 };
