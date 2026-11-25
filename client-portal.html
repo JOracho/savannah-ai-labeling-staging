@@ -696,9 +696,55 @@ function adminStatusControl(options,current){
  for(const [value,label] of options){const option=document.createElement('option');option.value=value;option.textContent=label;select.append(option);}
  select.value=current;return select;
 }
+function renderEnquiryProjectConversion(item, card){
+ if(item.converted_project_id){
+  const linked=adminProjects.find(p=>p.id===item.converted_project_id);
+  const note=document.createElement('p');note.className='hint';note.style.color='#245a32';
+  note.textContent='Project record created: '+(linked?.title||item.converted_project_id);
+  card.append(note);return;
+ }
+ if(item.status!=='converted')return;
+ const box=document.createElement('div');box.className='subpanel';box.style.marginTop='12px';
+ const heading=document.createElement('strong');heading.textContent='Create the Savannah project record';
+ const intro=document.createElement('p');intro.className='hint';intro.textContent='This creates the internal project record under a registered client account. It does not create a Supervisely or CVAT workspace. You can assign the annotation tool after the project is created.';
+ const clientLabel=document.createElement('label');clientLabel.textContent='Registered client account';
+ const client=document.createElement('select');client.required=true;client.style.cssText='width:100%;padding:10px;border:1px solid #d7d9d2;border-radius:4px;font:inherit';
+ const placeholder=document.createElement('option');placeholder.value='';placeholder.textContent='Choose the client account';client.append(placeholder);
+ for(const profile of adminClientProfiles){
+  const option=document.createElement('option');option.value=profile.id;
+  option.textContent=(profile.full_name?profile.full_name+' · ':'')+profile.email;
+  client.append(option);
+ }
+ const matching=adminClientProfiles.find(p=>(p.email||'').toLowerCase()===(item.email||'').toLowerCase());
+ if(matching)client.value=matching.id;
+ const titleLabel=document.createElement('label');titleLabel.textContent='Project title';
+ const title=document.createElement('input');title.type='text';title.maxLength=160;title.required=true;title.value=(item.name+' - '+item.service).slice(0,160);title.style.cssText='width:100%;padding:10px;border:1px solid #d7d9d2;border-radius:4px;font:inherit';
+ const descriptionLabel=document.createElement('label');descriptionLabel.textContent='Project description / brief';
+ const description=document.createElement('textarea');description.rows=3;description.maxLength=5000;description.value=item.message||'';description.style.cssText='width:100%;padding:10px;border:1px solid #d7d9d2;border-radius:4px;font:inherit';
+ const create=document.createElement('button');create.type='button';create.className='btn';create.textContent='Create project record';create.style.marginTop='12px';
+ const status=document.createElement('p');status.className='hint';status.setAttribute('role','status');
+ if(!adminClientProfiles.length){client.disabled=true;create.disabled=true;status.textContent='No registered client accounts are available. The client must create a Savannah account before a project can be assigned.';}
+ create.addEventListener('click',async()=>{
+  if(!client.value){status.textContent='Select the registered client account that should own this project.';return;}
+  if(!title.value.trim()){status.textContent='Enter a project title.';return;}
+  create.disabled=true;status.textContent='Creating the project record…';
+  try{
+   const {data,error}=await callNeonRpc('admin_convert_client_enquiry_to_project',{
+    p_enquiry_id:item.id,p_client_user_id:client.value,
+    p_project_title:title.value.trim(),p_project_description:description.value.trim()||null
+   });
+   if(error)throw error;
+   if(!data?.success)throw new Error(data?.error||'The project record was not created.');
+   await showDashboard(currentPortalUser,true);
+   message('adminClientInquiriesMessage',data.already_converted?'This enquiry is already linked to a project.':'Project record created and linked to the enquiry. The annotation workspace has not been created yet.','success');
+  }catch(err){status.textContent=err.message||'Unable to create the project record.';create.disabled=false;}
+ });
+ box.append(heading,intro,clientLabel,client,titleLabel,title,descriptionLabel,description,create,status);
+ card.append(box);
+}
 async function loadAdminClientInquiries(){
  const root=$('adminClientInquiries');root.replaceChildren();
- const {data,error}=await supabase.from('client_inquiries').select('id,name,email,company,service,message,status,admin_notes,created_at').order('created_at',{ascending:false});
+ const {data,error}=await supabase.from('client_inquiries').select('id,name,email,company,service,message,status,admin_notes,converted_project_id,created_at').order('created_at',{ascending:false});
  if(error)throw error;
  if(!data?.length){const p=document.createElement('p');p.className='muted';p.textContent='No website client enquiries have been received yet.';root.append(p);return;}
  for(const item of data){
@@ -711,10 +757,11 @@ async function loadAdminClientInquiries(){
   const meta=document.createElement('p');meta.className='hint';meta.textContent='Received '+new Date(item.created_at).toLocaleString();card.append(meta);
   const controls=document.createElement('div');controls.style.cssText='display:grid;grid-template-columns:minmax(0,180px) minmax(0,1fr) auto;gap:8px;align-items:start;margin-top:12px';
   const status=adminStatusControl([['received','Received'],['reviewing','Reviewing'],['contacted','Contacted'],['converted','Converted to project'],['closed','Closed']],item.status||'received');
+  if(item.converted_project_id)status.disabled=true;
   const notes=document.createElement('textarea');notes.rows=2;notes.maxLength=3000;notes.placeholder='Internal admin notes';notes.value=item.admin_notes||'';notes.style.cssText='width:100%;padding:10px;border:1px solid #d7d9d2;border-radius:4px;font:inherit';
   const save=document.createElement('button');save.type='button';save.className='btn secondary';save.textContent='Save';
   save.addEventListener('click',async()=>{save.disabled=true;try{const {data:updated,error:saveError}=await supabase.from('client_inquiries').update({status:status.value,admin_notes:notes.value.trim()||null}).eq('id',item.id).select('id').maybeSingle();if(saveError)throw saveError;if(!updated)throw new Error('No update was saved. Check administrator permissions.');message('adminClientInquiriesMessage','Client enquiry updated.','success');await loadAdminClientInquiries();}catch(err){message('adminClientInquiriesMessage',err.message||'Unable to update enquiry.','error');save.disabled=false;}});
-  controls.append(status,notes,save);card.append(controls);root.append(card);
+  controls.append(status,notes,save);card.append(controls);renderEnquiryProjectConversion(item,card);root.append(card);
  }
 }
 async function loadAdminAnnotatorApplications(){
@@ -776,6 +823,7 @@ $('clientProjectRequestForm').addEventListener('submit',async(event)=>{
 });
 function labelStatus(s){return ({project_submitted:'Project submitted',data_received:'Data received',data_verified:'Data verified',annotation_in_progress:'Annotation in progress',quality_assurance:'Quality assurance',client_review:'Client review',revision_required:'Revision required',completed:'Completed',delivered:'Delivered',on_hold:'On hold'})[s]||s;}
 let adminProjects=[];
+let adminClientProfiles=[];
 let annotatorAccounts=[];
 let teamLeadAccounts=[];
 
@@ -1364,6 +1412,9 @@ async function loadAdminPanel(){
  const {data,error}=await supabase.from('projects').select('id,project_code,title,client_user_id,service_type,description,annotation_tool,annotation_workspace_url,tool_access_mode,external_tool_name,status,progress_percent,due_date,created_at').order('created_at',{ascending:false});
  if(error) throw error;
  adminProjects=data||[];
+ const {data:clientProfiles,error:clientProfilesError}=await supabase.from('profiles').select('id,email,full_name,role').eq('role','client').order('email',{ascending:true});
+ if(clientProfilesError)throw clientProfilesError;
+ adminClientProfiles=clientProfiles||[];
  try{await loadAdminProjectRequests();}catch(err){message('adminProjectRequestsMessage','Unable to load project requests: '+err.message,'error');}
  try{await loadAdminClientInquiries();}catch(err){message('adminClientInquiriesMessage','Unable to load client enquiries: '+err.message,'error');}
  try{await loadAdminAnnotatorApplications();}catch(err){message('adminAnnotatorApplicationsMessage','Unable to load annotator applications: '+err.message,'error');}
