@@ -2,14 +2,9 @@ name: Build Neon publicforms bundle
 
 on:
   workflow_dispatch:
-  push:
-    branches: [main]
-    paths:
-      - 'publicforms-source.js'
-      - '.github/workflows/build-publicforms.yml'
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   build:
@@ -44,12 +39,3 @@ jobs:
           name: publicforms-neon-bundle
           path: publicforms-build/publicforms.zip
           retention-days: 3
-      - name: Temporarily publish ZIP as Base64 for Neon deployment
-        run: |
-          mkdir -p .deployment
-          base64 -w0 publicforms-build/publicforms.zip > .deployment/publicforms.zip.b64
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add .deployment/publicforms.zip.b64
-          git commit -m "Temporarily publish Neon function bundle"
-          git push
