@@ -72,6 +72,18 @@ a{color:inherit}.topbar{background:var(--green);color:#fff;padding:14px 0}.wrap{
   </section>
   <section id="adminPanel" class="panel hidden" style="margin-bottom:22px">
     <div class="eyebrow">Savannah administration</div>
+    <section class="subpanel" style="margin:18px 0">
+      <h3 style="color:var(--green);font: bold 24px Georgia,serif;margin:0 0 6px">Website client enquiries</h3>
+      <p class="muted">New enquiries submitted through the public Savannah website. Update each enquiry as you contact the client or convert it into a project.</p>
+      <div id="adminClientInquiries" class="project-list"><p class="muted">Loading client enquiries…</p></div>
+      <div id="adminClientInquiriesMessage" class="notice hidden" role="status"></div>
+    </section>
+    <section class="subpanel" style="margin:18px 0">
+      <h3 style="color:var(--green);font: bold 24px Georgia,serif;margin:0 0 6px">Website annotator applications</h3>
+      <p class="muted">Review applicants, record notes and update application status. CV attachments continue to arrive by email while secure CV file syncing is completed.</p>
+      <div id="adminAnnotatorApplications" class="project-list"><p class="muted">Loading annotator applications…</p></div>
+      <div id="adminAnnotatorApplicationsMessage" class="notice hidden" role="status"></div>
+    </section>
     <section class="subpanel" style="margin:18px 0"><h3 style="color:var(--green);font: bold 24px Georgia,serif;margin:0 0 6px">Incoming project requests</h3>
       <p class="muted">Review client submissions before creating or activating an annotation project. Accepting a request does not automatically create a Supervisely or CVAT project.</p>
       <div id="adminProjectRequests" class="project-list"><p class="muted">Loading incoming requests…</p></div><div id="adminProjectRequestsMessage" class="notice hidden" role="status"></div>
@@ -677,7 +689,58 @@ $('resendVerification').addEventListener('click',async()=>{
 
 function requestStatusLabel(s){return ({submitted:'Submitted',reviewing:'Under review',quoted:'Quote sent',accepted:'Accepted',declined:'Declined',converted:'Converted to project'})[s]||s||'Unknown';}
 function requestDate(v){if(!v)return 'Not specified';const d=new Date(v+(String(v).length===10?'T00:00:00':''));return Number.isNaN(d.getTime())?'Not specified':d.toLocaleDateString();}
+
 function requestDetail(label,value){const p=document.createElement('p');p.style.margin='5px 0';const b=document.createElement('strong');b.textContent=label+': ';const s=document.createElement('span');s.textContent=value||'Not provided';p.append(b,s);return p;}
+function adminStatusControl(options,current){
+ const select=document.createElement('select');select.style.cssText='padding:10px;border:1px solid #d7d9d2;border-radius:4px;font:inherit';
+ for(const [value,label] of options){const option=document.createElement('option');option.value=value;option.textContent=label;select.append(option);}
+ select.value=current;return select;
+}
+async function loadAdminClientInquiries(){
+ const root=$('adminClientInquiries');root.replaceChildren();
+ const {data,error}=await supabase.from('client_inquiries').select('id,name,email,company,service,message,status,admin_notes,created_at').order('created_at',{ascending:false});
+ if(error)throw error;
+ if(!data?.length){const p=document.createElement('p');p.className='muted';p.textContent='No website client enquiries have been received yet.';root.append(p);return;}
+ for(const item of data){
+  const card=document.createElement('article');card.className='subpanel';
+  const head=document.createElement('div');head.className='project-top';
+  const title=document.createElement('strong');title.textContent=item.name+' · '+item.service;
+  const pill=document.createElement('span');pill.className='pill';pill.textContent=item.status||'received';head.append(title,pill);card.append(head);
+  card.append(requestDetail('Email',item.email));if(item.company)card.append(requestDetail('Company',item.company));
+  const messageBox=document.createElement('div');messageBox.style.cssText='white-space:pre-wrap;background:#fff;border:1px solid #e7e3d8;border-radius:6px;padding:12px;margin-top:10px';messageBox.textContent=item.message||'No message supplied';card.append(messageBox);
+  const meta=document.createElement('p');meta.className='hint';meta.textContent='Received '+new Date(item.created_at).toLocaleString();card.append(meta);
+  const controls=document.createElement('div');controls.style.cssText='display:grid;grid-template-columns:minmax(0,180px) minmax(0,1fr) auto;gap:8px;align-items:start;margin-top:12px';
+  const status=adminStatusControl([['received','Received'],['reviewing','Reviewing'],['contacted','Contacted'],['converted','Converted to project'],['closed','Closed']],item.status||'received');
+  const notes=document.createElement('textarea');notes.rows=2;notes.maxLength=3000;notes.placeholder='Internal admin notes';notes.value=item.admin_notes||'';notes.style.cssText='width:100%;padding:10px;border:1px solid #d7d9d2;border-radius:4px;font:inherit';
+  const save=document.createElement('button');save.type='button';save.className='btn secondary';save.textContent='Save';
+  save.addEventListener('click',async()=>{save.disabled=true;try{const {data:updated,error:saveError}=await supabase.from('client_inquiries').update({status:status.value,admin_notes:notes.value.trim()||null}).eq('id',item.id).select('id').maybeSingle();if(saveError)throw saveError;if(!updated)throw new Error('No update was saved. Check administrator permissions.');message('adminClientInquiriesMessage','Client enquiry updated.','success');await loadAdminClientInquiries();}catch(err){message('adminClientInquiriesMessage',err.message||'Unable to update enquiry.','error');save.disabled=false;}});
+  controls.append(status,notes,save);card.append(controls);root.append(card);
+ }
+}
+async function loadAdminAnnotatorApplications(){
+ const root=$('adminAnnotatorApplications');root.replaceChildren();
+ const {data,error}=await supabase.from('annotator_applications').select('id,full_name,email,experience_area,portfolio_url,experience_summary,cv_storage_path,status,admin_notes,created_at').order('created_at',{ascending:false});
+ if(error)throw error;
+ if(!data?.length){const p=document.createElement('p');p.className='muted';p.textContent='No website annotator applications have been received yet.';root.append(p);return;}
+ for(const item of data){
+  const card=document.createElement('article');card.className='subpanel';
+  const head=document.createElement('div');head.className='project-top';
+  const title=document.createElement('strong');title.textContent=item.full_name+' · '+item.experience_area;
+  const pill=document.createElement('span');pill.className='pill';pill.textContent=item.status||'received';head.append(title,pill);card.append(head);
+  card.append(requestDetail('Email',item.email));
+  if(item.portfolio_url){const p=document.createElement('p');p.style.margin='5px 0';const a=document.createElement('a');a.href=item.portfolio_url;a.target='_blank';a.rel='noopener noreferrer';a.textContent='Open portfolio';a.style.color='var(--green)';p.append(a);card.append(p);}
+  const summary=document.createElement('div');summary.style.cssText='white-space:pre-wrap;background:#fff;border:1px solid #e7e3d8;border-radius:6px;padding:12px;margin-top:10px';summary.textContent=item.experience_summary||'No additional details supplied';card.append(summary);
+  card.append(requestDetail('CV',item.cv_storage_path?'Stored in private portal storage':(item.admin_notes||'Check the FormSubmit email attachment')));
+  const meta=document.createElement('p');meta.className='hint';meta.textContent='Received '+new Date(item.created_at).toLocaleString();card.append(meta);
+  const controls=document.createElement('div');controls.style.cssText='display:grid;grid-template-columns:minmax(0,180px) minmax(0,1fr) auto;gap:8px;align-items:start;margin-top:12px';
+  const status=adminStatusControl([['received','Received'],['reviewing','Reviewing'],['shortlisted','Shortlisted'],['approved','Approved'],['rejected','Rejected']],item.status||'received');
+  const notes=document.createElement('textarea');notes.rows=2;notes.maxLength=3000;notes.placeholder='Internal admin notes';notes.value=item.admin_notes||'';notes.style.cssText='width:100%;padding:10px;border:1px solid #d7d9d2;border-radius:4px;font:inherit';
+  const save=document.createElement('button');save.type='button';save.className='btn secondary';save.textContent='Save';
+  save.addEventListener('click',async()=>{save.disabled=true;try{const {data:updated,error:saveError}=await supabase.from('annotator_applications').update({status:status.value,admin_notes:notes.value.trim()||null}).eq('id',item.id).select('id').maybeSingle();if(saveError)throw saveError;if(!updated)throw new Error('No update was saved. Check administrator permissions.');message('adminAnnotatorApplicationsMessage','Annotator application updated.','success');await loadAdminAnnotatorApplications();}catch(err){message('adminAnnotatorApplicationsMessage',err.message||'Unable to update application.','error');save.disabled=false;}});
+  controls.append(status,notes,save);card.append(controls);root.append(card);
+ }
+}
+
 async function loadClientProjectRequests(user){
  const root=$('clientProjectRequests');root.replaceChildren();
  const {data,error}=await supabase.from('project_requests').select('id,project_title,service_type,estimated_volume,target_deadline,status,created_at').eq('submitted_by',user.id).order('created_at',{ascending:false});
@@ -1302,6 +1365,8 @@ async function loadAdminPanel(){
  if(error) throw error;
  adminProjects=data||[];
  try{await loadAdminProjectRequests();}catch(err){message('adminProjectRequestsMessage','Unable to load project requests: '+err.message,'error');}
+ try{await loadAdminClientInquiries();}catch(err){message('adminClientInquiriesMessage','Unable to load client enquiries: '+err.message,'error');}
+ try{await loadAdminAnnotatorApplications();}catch(err){message('adminAnnotatorApplicationsMessage','Unable to load annotator applications: '+err.message,'error');}
  populateCvatProjectOptions();
  const annotationProjectSelect=$('annotationReviewProject');
  annotationProjectSelect.replaceChildren();
