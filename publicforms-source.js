@@ -54,7 +54,10 @@ async function readPayload(request) {
 
 function extractSubmission(payload) {
   if (!payload || typeof payload !== "object" || Array.isArray(payload)) return null;
-  const data = payload.form_data ?? payload.submission?.data ?? payload.data ?? payload;
+  let data = payload.form_data ?? payload.submission?.data ?? payload.data ?? payload;
+  if (typeof data === "string") {
+    try { data = JSON.parse(data); } catch { return null; }
+  }
   if (!data || typeof data !== "object" || Array.isArray(data)) return null;
   return {
     fields: plainFields(data),
