@@ -2,6 +2,10 @@ name: Build Neon publicforms bundle
 
 on:
   workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/build-publicforms.yml
 
 permissions:
   contents: write
