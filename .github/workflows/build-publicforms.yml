@@ -2,13 +2,9 @@ name: Build Neon publicforms bundle
 
 on:
   workflow_dispatch:
-  push:
-    branches: [main]
-    paths:
-      - .github/workflows/build-publicforms.yml
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   build:
@@ -37,19 +33,9 @@ jobs:
           npm install --omit=dev --ignore-scripts --no-audit --no-fund
           npx --yes esbuild index.js --bundle --platform=node --target=node24 --format=esm --packages=bundle --outfile=index.mjs
           zip -j publicforms.zip index.mjs
-          base64 -w0 publicforms.zip > publicforms-deploy-base64.txt
       - name: Upload build ZIP
         uses: actions/upload-artifact@v4
         with:
           name: publicforms-neon-bundle
           path: publicforms-build/publicforms.zip
           retention-days: 3
-      - name: Stage temporary deployment payload
-        run: |
-          mkdir -p .deployment
-          cp publicforms-build/publicforms-deploy-base64.txt .deployment/publicforms-deploy-base64.txt
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add .deployment/publicforms-deploy-base64.txt
-          git commit -m "Stage temporary publicforms deployment bundle"
-          git push
