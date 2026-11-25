@@ -1,10 +1,15 @@
 name: Build Neon publicforms bundle
 
 on:
+  push:
+    branches: [main]
+    paths:
+      - publicforms-source.js
+      - .github/workflows/build-publicforms.yml
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   build:
@@ -33,6 +38,15 @@ jobs:
           npm install --omit=dev --ignore-scripts --no-audit --no-fund
           npx --yes esbuild index.js --bundle --platform=node --target=node24 --format=esm --packages=bundle --banner:js="import{createRequire as ___cr}from'module';import{fileURLToPath as ___f}from'url';import{dirname as ___d}from'path';const require=___cr(import.meta.url);const __filename=___f(import.meta.url);const __dirname=___d(__filename);" --outfile=index.mjs
           zip -j publicforms.zip index.mjs
+      - name: Create temporary Base64 handoff file
+        run: |
+          mkdir -p .deployment
+          base64 -w0 publicforms-build/publicforms.zip > .deployment/publicforms.zip.b64
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add .deployment/publicforms.zip.b64
+          git commit -m "Temporary deployment bundle handoff"
+          git push
       - name: Upload build ZIP
         uses: actions/upload-artifact@v4
         with:
