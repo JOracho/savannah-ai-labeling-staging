@@ -1138,7 +1138,10 @@ async function loadReviewAssignments(){
    for(const file of files){const row=document.createElement('p');const link=document.createElement('a');link.href=file.download_url;link.target='_blank';link.rel='noopener noreferrer';link.textContent='Download '+file.file_name;row.append(link);const meta=document.createElement('small');meta.className='hint';meta.textContent=' · '+Math.max(1,Math.round(Number(file.file_size_bytes||0)/1024))+' KB';row.append(meta);fileBox.append(row);}
    card.append(heading,detail,fileBox);
   }else{card.append(heading,detail);}
-  for(const choice of [{status:'approved',label:'Approve work'},{status:'rework',label:'Request rework'}]){
+  const reviewChoices=item.assignment_status==='rework'
+   ? [{status:'approved',label:'Approve corrected work'}]
+   : [{status:'approved',label:'Approve work'},{status:'rework',label:'Request rework'}];
+  for(const choice of reviewChoices){
    const button=document.createElement('button');button.type='button';button.className='btn'+(choice.status==='rework'?' secondary':'');button.textContent=choice.label;
    const hasRubric=!!card.querySelector('[data-qa-rubric="true"]');qaDecisionButtons.push({status:choice.status,button,hasRubric});
    button.disabled=hasRubric&&!(choice.status==='approved'?qaOutcome==='pass':qaOutcome==='needs_rework');
@@ -1684,7 +1687,14 @@ async function loadReviewerDashboard(user){
  const {data,error}=await supabase.functions.invoke('manage-annotators',{body:{action:'list_review_queue'}});
  if(error)throw error;
  if(!data?.success)throw new Error(data?.error||'Unable to load the review queue.');
- const items=data.assignments||[];
+ const submittedItems=data.assignments||[];
+ const {data:reworkItems,error:reworkError}=await supabase.from('project_assignments')
+  .select('id,project_id,annotator_user_id,platform,external_task_reference,assignment_status,assigned_at,projects(id,title,project_code,service_type,annotation_tool,annotation_workspace_url,tool_access_mode,external_tool_name,due_date)')
+  .eq('assignment_status','rework').order('assigned_at',{ascending:false});
+ if(reworkError)throw reworkError;
+ const itemMap=new Map(submittedItems.map(item=>[item.id,item]));
+ for(const item of reworkItems||[])if(!itemMap.has(item.id))itemMap.set(item.id,item);
+ const items=Array.from(itemMap.values());
  const {data:byotData,error:byotError}=await supabase.functions.invoke('byot-submissions',{body:{action:'list_queue'}});
  if(byotError)throw byotError;
  const byotMap=new Map((byotData?.assignments||[]).map(x=>[x.id,x]));
