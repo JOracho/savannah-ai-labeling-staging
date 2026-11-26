@@ -414,45 +414,72 @@ async function renderQaIssues(assignment, container, viewerRole, user, refreshDa
  if(error)throw error;
  const box=document.createElement('section');box.className='subpanel';box.style.marginTop='14px';
  const title=document.createElement('h4');title.textContent=viewerRole==='reviewer'?'QA issue report':'QA correction requests';title.style.color='var(--green)';box.append(title);
- if(!issues?.length){const empty=document.createElement('p');empty.className='hint';empty.textContent=viewerRole==='reviewer'?'No individual QA issues recorded yet. Add each error below before requesting rework.':'No individual QA corrections have been assigned to this task.';box.append(empty);}
- for(const issue of issues||[]){
-  const item=document.createElement('article');item.style.background='#fff';item.style.border='1px solid #e7e3d8';item.style.borderRadius='6px';item.style.padding='12px';item.style.marginTop='10px';
-  const head=document.createElement('div');head.className='project-top';
-  const label=document.createElement('strong');label.textContent=issue.category.replaceAll('_',' ').replace(/\\b\\w/g,c=>c.toUpperCase());
-  const badge=document.createElement('span');badge.className='pill';badge.textContent=issue.severity.toUpperCase()+' · '+issue.issue_status.toUpperCase();
-  head.append(label,badge);item.append(head);
-  const desc=document.createElement('p');desc.style.margin='8px 0 4px';desc.textContent=issue.description;item.append(desc);
-  if(issue.location_reference){const loc=document.createElement('p');loc.className='hint';loc.textContent='Location / object reference: '+issue.location_reference;item.append(loc);}
-  if(issue.correction_note){const note=document.createElement('p');note.className='hint';note.textContent='Annotator response: '+issue.correction_note;item.append(note);}
-  if(viewerRole==='annotator' && issue.issue_status==='open'){
-   const form=document.createElement('form');form.style.display='grid';form.style.gap='8px';form.style.marginTop='10px';
-   const labelNote=document.createElement('label');labelNote.textContent='Explain the correction made';
-   const input=document.createElement('textarea');input.rows=2;input.maxLength=1000;input.required=true;input.placeholder='Describe how you corrected this issue…';
-   const btn=document.createElement('button');btn.type='submit';btn.className='btn secondary';btn.textContent='Mark correction complete';
-   const status=document.createElement('p');status.className='hint';form.append(labelNote,input,btn,status);
-   form.addEventListener('submit',async ev=>{ev.preventDefault();btn.disabled=true;try{
-    const {data:updated,error:updateError}=await supabase.from('qa_issues').update({issue_status:'corrected',correction_note:input.value.trim(),resolved_at:new Date().toISOString()}).eq('id',issue.id).eq('issue_status','open').select('id').maybeSingle();
-    if(updateError)throw updateError;if(!updated)throw new Error('This issue has changed. Refresh your dashboard and try again.');
-    await refreshDashboard();
-   }catch(err){status.textContent=err.message||'Unable to save correction.';btn.disabled=false;}
-   });
-   item.append(form);
-  }else if(viewerRole==='reviewer' && issue.issue_status==='corrected'){
-   const btn=document.createElement('button');btn.type='button';btn.className='btn secondary';btn.textContent='Verify correction';
-   btn.addEventListener('click',async()=>{btn.disabled=true;try{
-    const {data:updated,error:updateError}=await supabase.from('qa_issues').update({issue_status:'verified',verified_at:new Date().toISOString()}).eq('id',issue.id).eq('issue_status','corrected').select('id').maybeSingle();
-    if(updateError)throw updateError;if(!updated)throw new Error('This issue has changed. Refresh the review queue.');
-    await refreshDashboard();
-   }catch(err){message('reviewerMessage',err.message||'Unable to verify correction.','error');btn.disabled=false;}
-   });
-   item.append(btn);
-  }
-  box.append(item);
+ const categoryLabels={missing_label:'Missing object / label',incorrect_class:'Incorrect class',bounding_box:'Cuboid placement / dimensions',cuboid_orientation:'Cuboid orientation / rotation',segmentation:'Segmentation',tracking:'Object tracking',geometry:'Geometry / alignment',attributes:'Incorrect object attributes',duplicate:'Duplicate annotation',format:'Format / export',other:'Other'};
+ if(!issues?.length){
+  const empty=document.createElement('p');empty.className='hint';empty.textContent=viewerRole==='reviewer'?'No QA report has been saved yet. Select the applicable categories, describe all findings, then save the report.':'No individual QA corrections have been assigned to this task.';box.append(empty);
  }
- if(viewerRole==='reviewer'){
+ if(viewerRole==='reviewer' && issues?.length){
+  const groups=new Map();
+  for(const issue of issues){
+   const key=[issue.created_at,issue.severity,issue.location_reference||'',issue.description||''].join('|');
+   if(!groups.has(key))groups.set(key,{...issue,categories:[]});
+   groups.get(key).categories.push(issue.category);
+  }
+  for(const report of groups.values()){
+   const item=document.createElement('article');item.style.background='#fff';item.style.border='1px solid #d7d9d2';item.style.borderRadius='6px';item.style.padding='14px';item.style.marginTop='10px';
+   const reportTitle=document.createElement('strong');reportTitle.textContent='Saved QA report';item.append(reportTitle);
+   const categories=document.createElement('div');categories.style.cssText='display:flex;flex-wrap:wrap;gap:6px;margin:9px 0';
+   for(const value of Array.from(new Set(report.categories))){
+    const chip=document.createElement('span');chip.textContent=categoryLabels[value]||value.replaceAll('_',' ');chip.style.cssText='display:inline-flex;padding:4px 8px;border-radius:4px;background:#f4f5f1;color:#26352b;border:1px solid #d7d9d2;font-size:13px';categories.append(chip);
+   }
+   item.append(categories);
+   const meta=document.createElement('p');meta.className='hint';meta.textContent=report.severity.toUpperCase()+' · '+(report.created_at?new Date(report.created_at).toLocaleString():'Saved');item.append(meta);
+   if(report.location_reference){const loc=document.createElement('p');loc.className='hint';loc.textContent='Object, frame or file reference: '+report.location_reference;item.append(loc);}
+   const descLabel=document.createElement('strong');descLabel.textContent='Description and required corrections';item.append(descLabel);
+   const desc=document.createElement('p');desc.style.cssText='margin:5px 0 0;white-space:pre-wrap';desc.textContent=report.description;item.append(desc);
+   const lock=document.createElement('p');lock.className='hint';lock.style.marginBottom='0';lock.textContent='Saved report · Read-only';item.append(lock);
+   box.append(item);
+  }
+ }else{
+  for(const issue of issues||[]){
+   const item=document.createElement('article');item.style.background='#fff';item.style.border='1px solid #e7e3d8';item.style.borderRadius='6px';item.style.padding='12px';item.style.marginTop='10px';
+   const head=document.createElement('div');head.className='project-top';
+   const label=document.createElement('strong');label.textContent=categoryLabels[issue.category]||issue.category.replaceAll('_',' ');
+   const badge=document.createElement('span');badge.className='pill';badge.textContent=issue.severity.toUpperCase()+' · '+issue.issue_status.toUpperCase();
+   head.append(label,badge);item.append(head);
+   const desc=document.createElement('p');desc.style.margin='8px 0 4px';desc.style.whiteSpace='pre-wrap';desc.textContent=issue.description;item.append(desc);
+   if(issue.location_reference){const loc=document.createElement('p');loc.className='hint';loc.textContent='Location / object reference: '+issue.location_reference;item.append(loc);}
+   if(issue.correction_note){const note=document.createElement('p');note.className='hint';note.textContent='Annotator response: '+issue.correction_note;item.append(note);}
+   if(viewerRole==='annotator' && issue.issue_status==='open'){
+    const form=document.createElement('form');form.style.display='grid';form.style.gap='8px';form.style.marginTop='10px';
+    const labelNote=document.createElement('label');labelNote.textContent='Explain the correction made';
+    const input=document.createElement('textarea');input.rows=2;input.maxLength=1000;input.required=true;input.placeholder='Describe how you corrected this issue…';
+    const btn=document.createElement('button');btn.type='submit';btn.className='btn secondary';btn.textContent='Mark correction complete';
+    const status=document.createElement('p');status.className='hint';form.append(labelNote,input,btn,status);
+    form.addEventListener('submit',async ev=>{ev.preventDefault();btn.disabled=true;try{
+     const {data:updated,error:updateError}=await supabase.from('qa_issues').update({issue_status:'corrected',correction_note:input.value.trim(),resolved_at:new Date().toISOString()}).eq('id',issue.id).eq('issue_status','open').select('id').maybeSingle();
+     if(updateError)throw updateError;if(!updated)throw new Error('This issue has changed. Refresh your dashboard and try again.');
+     await refreshDashboard();
+    }catch(err){status.textContent=err.message||'Unable to save correction.';btn.disabled=false;}
+    });
+    item.append(form);
+   }else if(viewerRole==='reviewer' && issue.issue_status==='corrected'){
+    const btn=document.createElement('button');btn.type='button';btn.className='btn secondary';btn.textContent='Verify correction';
+    btn.addEventListener('click',async()=>{btn.disabled=true;try{
+     const {data:updated,error:updateError}=await supabase.from('qa_issues').update({issue_status:'verified',verified_at:new Date().toISOString()}).eq('id',issue.id).eq('issue_status','corrected').select('id').maybeSingle();
+     if(updateError)throw updateError;if(!updated)throw new Error('This issue has changed. Refresh the review queue.');
+     await refreshDashboard();
+    }catch(err){message('reviewerMessage',err.message||'Unable to verify correction.','error');btn.disabled=false;}
+    });
+    item.append(btn);
+   }
+   box.append(item);
+  }
+ }
+ if(viewerRole==='reviewer' && !issues?.length){
   const form=document.createElement('form');form.style.display='grid';form.style.gap='8px';form.style.marginTop='14px';
   const categoryLabel=document.createElement('label');categoryLabel.textContent='Choose error categories';
-  const categoryOptions=[['missing_label','Missing object / label'],['incorrect_class','Incorrect class'],['bounding_box','Cuboid placement / dimensions'],['cuboid_orientation','Cuboid orientation / rotation'],['segmentation','Segmentation'],['tracking','Object tracking'],['geometry','Geometry / alignment'],['attributes','Incorrect object attributes'],['duplicate','Duplicate annotation'],['format','Format / export'],['other','Other']];
+  const categoryOptions=Object.entries(categoryLabels);
   const selectedCategories=new Set();
   const categoryChoices=document.createElement('div');categoryChoices.style.cssText='display:flex;flex-wrap:wrap;gap:8px';
   const selectedDisplay=document.createElement('div');selectedDisplay.setAttribute('aria-live','polite');selectedDisplay.style.cssText='display:flex;flex-wrap:wrap;gap:6px;min-height:24px;padding:6px 0;margin-top:4px';
@@ -468,20 +495,20 @@ async function renderQaIssues(assignment, container, viewerRole, user, refreshDa
   const severity=document.createElement('select');severity.style.cssText='width:100%;padding:10px;border:1px solid #d7d9d2;border-radius:4px;font:inherit';for(const [value,label] of [['minor','Minor (−1 point)'],['moderate','Moderate (−3 points)'],['major','Major (−5 points)'],['critical','Critical (−10 points)']]){const option=document.createElement('option');option.value=value;option.textContent=label;severity.append(option);}
   const locationLabel=document.createElement('label');locationLabel.textContent='Object, frame or file reference (optional)';
   const location=document.createElement('input');location.maxLength=160;location.placeholder='e.g. Frame 12, Car 03, point cloud segment B';location.style.cssText='width:100%;padding:10px;border:1px solid #d7d9d2;border-radius:4px;font:inherit';
-  const descriptionLabel=document.createElement('label');descriptionLabel.textContent='Describe the error and required correction';
-  const description=document.createElement('textarea');description.rows=3;description.maxLength=2000;description.required=true;description.placeholder='Explain what is wrong and what the annotator must change…';description.style.cssText='width:100%;padding:10px;border:1px solid #d7d9d2;border-radius:4px;font:inherit';
-  const add=document.createElement('button');add.type='submit';add.className='btn';add.textContent='Add QA issue';
+  const descriptionLabel=document.createElement('label');descriptionLabel.textContent='Describe all errors and required corrections';
+  const description=document.createElement('textarea');description.rows=5;description.maxLength=5000;description.required=true;description.placeholder='Write each finding as a separate paragraph…';description.style.cssText='width:100%;padding:10px;border:1px solid #d7d9d2;border-radius:4px;font:inherit';
+  const add=document.createElement('button');add.type='submit';add.className='btn';add.textContent='Save QA report';
   const status=document.createElement('p');status.className='hint';
   form.append(categoryLabel,categoryChoices,categoryHint,severityLabel,severity,locationLabel,location,selectedDisplay,descriptionLabel,description,add,status);
-  form.addEventListener('submit',async ev=>{ev.preventDefault();add.disabled=true;status.textContent='Saving QA issue…';try{
+  form.addEventListener('submit',async ev=>{ev.preventDefault();add.disabled=true;status.textContent='Saving QA report…';try{
    if(!assignment.projectId||!assignment.annotatorId)throw new Error('Assignment details are incomplete. Refresh the review queue.');
    const selectedCategoryValues=Array.from(selectedCategories);
    if(!selectedCategoryValues.length)throw new Error('Select at least one error category.');
    const issueRows=selectedCategoryValues.map(categoryValue=>({assignment_id:assignment.id,project_id:assignment.projectId,annotator_user_id:assignment.annotatorId,reviewer_user_id:user.id,category:categoryValue,severity:severity.value,location_reference:location.value.trim()||null,description:description.value.trim()}));
    const {data:created,error:createError}=await supabase.from('qa_issues').insert(issueRows).select('id');
-   if(createError)throw createError;if(!created||created.length!==issueRows.length)throw new Error('Not all QA issues were saved. Refresh and check the issue report.');
+   if(createError)throw createError;if(!created||created.length!==issueRows.length)throw new Error('Not all QA report categories were saved. Refresh and check the report.');
    await refreshDashboard();
-  }catch(err){status.textContent=err.message||'Unable to save QA issue.';add.disabled=false;}
+  }catch(err){status.textContent=err.message||'Unable to save QA report.';add.disabled=false;}
   });
   box.append(form);
  }
