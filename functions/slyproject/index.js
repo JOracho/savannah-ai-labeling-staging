@@ -179,6 +179,13 @@ export default {
               : "images";
       }
 
+      // Supervisely project names cannot contain slash, backslash or pipe characters.
+      // Keep the original title in Savannah; sanitize only the external project name.
+      const superviselyName = title
+        .replace(/\\s*[\\/\\\\|]+\\s*/g, " - ")
+        .replace(/\\s+/g, " ")
+        .trim();
+
       const superviselyResponse = await fetch("https://app.supervisely.com/public/api/v3/projects.add", {
         method: "POST",
         headers: {
@@ -187,7 +194,7 @@ export default {
         },
         body: JSON.stringify({
           workspaceId: 142007,
-          name: title,
+          name: superviselyName,
           description,
           type: projectType
         })
@@ -209,7 +216,7 @@ export default {
         if (
           superviselyResponse.status === 400 &&
           result?.details?.type === "NONUNIQUE" &&
-          duplicate?.name === title &&
+          duplicate?.name === superviselyName &&
           /^\d+$/.test(String(duplicate?.id || ""))
         ) {
           duplicateProjectId = String(duplicate.id);
