@@ -96,38 +96,88 @@ export default {
       }
 
       const body = await request.json().catch(() => ({}));
-      const title = String(body.title || "").trim();
-      const service = String(body.service_type || "").trim();
-      const description = String(body.description || "").trim();
+      const existingProjectId = String(body.project_id || "").trim();
       const suppliedClientId = String(body.client_user_id || "").trim();
+      let title = String(body.title || "").trim();
+      let service = String(body.service_type || "").trim();
+      let description = String(body.description || "").trim();
+      let clientId = suppliedClientId || userId;
 
-      if (!title || title.length > 120 || !service || service.length > 100 || description.length > 2000) {
-        return json({ error: "Enter a project title, service type and description within the stated limits." }, 400, headers);
+      if (existingProjectId && !UUID.test(existingProjectId)) {
+        return json({ error: "The existing Savannah project ID is invalid." }, 400, headers);
       }
       if (suppliedClientId && !UUID.test(suppliedClientId)) {
         return json({ error: "The selected client account ID is invalid." }, 400, headers);
       }
 
-      const clientId = suppliedClientId || userId;
-      if (suppliedClientId) {
-        const clientResult = await pool.query(
-          "SELECT id FROM public.profiles WHERE id = $1 LIMIT 1",
-          [clientId]
+      if (existingProjectId) {
+        const existingResult = await pool.query(
+          `SELECT id, client_user_id, title, service_type, description,
+                  annotation_tool, annotation_workspace_url, tool_access_mode
+           FROM public.projects WHERE id = $1 LIMIT 1`,
+          [existingProjectId]
         );
-        if (!clientResult.rows.length) {
-          return json({ error: "The selected client account was not found. Confirm the client has registered in Savannah." }, 404, headers);
+        const existingProject = existingResult.rows[0];
+        if (!existingProject) {
+          return json({ error: "The Savannah project to attach was not found." }, 404, headers);
+        }
+        if (existingProject.annotation_tool || existingProject.annotation_workspace_url) {
+          if (
+            existingProject.annotation_tool === "supervisely" &&
+            existingProject.annotation_workspace_url
+          ) {
+            const match = existingProject.annotation_workspace_url.match(/\/projects\/(\d+)/);
+            return json({
+              success: true,
+              already_assigned: true,
+              project: existingProject,
+              supervisely_project_id: match?.[1] || null,
+              workspace_id: 142007,
+              workspace_url: existingProject.annotation_workspace_url
+            }, 200, headers);
+          }
+          return json({ error: "This Savannah project already has an annotation tool assigned. No new workspace was created." }, 409, headers);
+        }
+        if (existingProject.tool_access_mode !== "managed") {
+          return json({ error: "Only Savannah-managed projects can be attached to the managed Supervisely workspace." }, 409, headers);
+        }
+        title = existingProject.title;
+        service = existingProject.service_type;
+        description = existingProject.description || "";
+        clientId = existingProject.client_user_id;
+      } else {
+        if (!title || title.length > 120 || !service || service.length > 100 || description.length > 2000) {
+          return json({ error: "Enter a project title, service type and description within the stated limits." }, 400, headers);
+        }
+        if (suppliedClientId) {
+          const clientResult = await pool.query(
+            "SELECT id FROM public.profiles WHERE id = $1 LIMIT 1",
+            [clientId]
+          );
+          if (!clientResult.rows.length) {
+            return json({ error: "The selected client account was not found. Confirm the client has registered in Savannah." }, 404, headers);
+          }
         }
       }
 
-      const normalizedService = service.toLowerCase();
-      const projectType =
-        normalizedService.includes("lidar") ||
-        normalizedService.includes("point cloud") ||
-        normalizedService.includes("3d")
-          ? "point_clouds"
-          : normalizedService.includes("video")
-            ? "videos"
-            : "images";
+      const requestedDataType = String(body.data_type || "").trim();
+      let projectType;
+      if (existingProjectId) {
+        if (!["point_clouds", "images", "videos"].includes(requestedDataType)) {
+          return json({ error: "Choose a supported Supervisely data type: point clouds, images or videos." }, 400, headers);
+        }
+        projectType = requestedDataType;
+      } else {
+        const normalizedService = service.toLowerCase();
+        projectType =
+          normalizedService.includes("lidar") ||
+          normalizedService.includes("point cloud") ||
+          normalizedService.includes("3d")
+            ? "point_clouds"
+            : normalizedService.includes("video")
+              ? "videos"
+              : "images";
+      }
 
       const superviselyResponse = await fetch("https://app.supervisely.com/public/api/v3/projects.add", {
         method: "POST",
@@ -184,14 +234,37 @@ export default {
       }
 
       const workspaceUrl = `https://app.supervisely.com/projects/${externalProjectId}/datasets`;
-      const saved = await pool.query(
-        `INSERT INTO public.projects
-          (client_user_id, title, service_type, description, annotation_tool,
-           annotation_workspace_url, tool_access_mode, status, progress_percent)
-         VALUES ($1, $2, $3, $4, 'supervisely', $5, 'managed', 'project_submitted', 0)
-         RETURNING * `,
-        [clientId, title, service, description || null, workspaceUrl]
-      );
+      let saved;
+      if (existingProjectId) {
+        saved = await pool.query(
+          `UPDATE public.projects
+           SET annotation_tool = 'supervisely',
+               annotation_workspace_url = $2,
+               tool_access_mode = 'managed',
+               updated_at = now()
+           WHERE id = $1
+             AND annotation_tool IS NULL
+             AND annotation_workspace_url IS NULL
+           RETURNING *`,
+          [existingProjectId, workspaceUrl]
+        );
+        if (!saved.rows.length) {
+          return json({
+            error: "The Supervisely workspace was created, but the Savannah project changed before it could be linked. Check the project before retrying.",
+            supervisely_project_id: String(externalProjectId),
+            workspace_url: workspaceUrl
+          }, 409, headers);
+        }
+      } else {
+        saved = await pool.query(
+          `INSERT INTO public.projects
+            (client_user_id, title, service_type, description, annotation_tool,
+             annotation_workspace_url, tool_access_mode, status, progress_percent)
+           VALUES ($1, $2, $3, $4, 'supervisely', $5, 'managed', 'project_submitted', 0)
+           RETURNING * `,
+          [clientId, title, service, description || null, workspaceUrl]
+        );
+      }
 
       return json({
         success: true,
@@ -199,7 +272,7 @@ export default {
         supervisely_project_id: String(externalProjectId),
         workspace_id: 142007,
         workspace_url: workspaceUrl
-      }, 201, headers);
+      }, existingProjectId ? 200 : 201, headers);
     } catch (error) {
       console.error("Supervisely project creation failed:", error);
       return json({
