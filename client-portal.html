@@ -1803,30 +1803,37 @@ async function loadReviewerDashboard(user){
   if(!reviewerProjectId)throw new Error('Unable to find the project linked to this review assignment.');
   await renderQaIssues({id:item.id,projectId:reviewerProjectId,annotatorId:item.annotator_user_id||person.id||person.user_id},card,'reviewer',user,()=>loadReviewerDashboard(user));
   await renderReviewerQaScore(item,{...(project||{}),id:reviewerProjectId},card,user);
-  const actions=document.createElement('div');actions.style.display='flex';actions.style.gap='10px';actions.style.flexWrap='wrap';
-  for(const choice of [{status:'approved',label:'Approve work'},{status:'rework',label:'Request rework'}]){
-   const button=document.createElement('button');button.type='button';button.className='btn'+(choice.status==='rework'?' secondary':'');button.textContent=choice.label;
-   button.addEventListener('click',async()=>{
-    button.disabled=true;
-    try{
-     if(choice.status==='rework'){
-      const {data:issues,error:issuesError}=await supabase.from('qa_issues').select('id,issue_status').eq('assignment_id',item.id);
-      if(issuesError)throw issuesError;
-      if(!issues?.length)throw new Error('Add at least one QA issue with an error category and correction instructions before requesting rework.');
-      const openIssues=issues.filter(issue=>issue.issue_status==='open');
-      if(!openIssues.length)throw new Error('There are no open QA issues. Add a new issue or verify the existing corrections before requesting rework.');
-     }
-     const actionBody=isByot?{action:'review',assignment_id:item.id,assignment_status:choice.status}:{action:'review_assignment',assignment_id:item.id,assignment_status:choice.status};
-     const {data:result,error:invokeError}=await supabase.functions.invoke(isByot?'byot-submissions':'manage-annotators',{body:actionBody});
-     if(invokeError)throw invokeError;
-     if(!result?.success)throw new Error(result?.error||'Unable to save the review decision.');
-     message('reviewerMessage',result.message||'Review decision saved.','success');
-     await loadReviewerDashboard(user);
-    }catch(err){message('reviewerMessage',err.message||'Unable to save the review decision.','error');button.disabled=false;}
-   });
-   actions.append(button);
+  if(item.assignment_status==='rework'){
+   const waiting=document.createElement('p');waiting.className='hint';waiting.style.marginTop='12px';
+   waiting.textContent='Awaiting annotator resubmission. Review decisions will become available after the corrected work is submitted.';
+   card.append(waiting);
+  }else{
+   const actions=document.createElement('div');actions.style.display='flex';actions.style.gap='10px';actions.style.flexWrap='wrap';
+   for(const choice of [{status:'approved',label:'Approve work'},{status:'rework',label:'Request rework'}]){
+    const button=document.createElement('button');button.type='button';button.className='btn'+(choice.status==='rework'?' secondary':'');button.textContent=choice.label;
+    button.addEventListener('click',async()=>{
+     button.disabled=true;
+     try{
+      if(choice.status==='rework'){
+       const {data:issues,error:issuesError}=await supabase.from('qa_issues').select('id,issue_status').eq('assignment_id',item.id);
+       if(issuesError)throw issuesError;
+       if(!issues?.length)throw new Error('Add at least one QA issue with an error category and correction instructions before requesting rework.');
+       const openIssues=issues.filter(issue=>issue.issue_status==='open');
+       if(!openIssues.length)throw new Error('There are no open QA issues. Add a new issue or verify the existing corrections before requesting rework.');
+      }
+      const actionBody=isByot?{action:'review',assignment_id:item.id,assignment_status:choice.status}:{action:'review_assignment',assignment_id:item.id,assignment_status:choice.status};
+      const {data:result,error:invokeError}=await supabase.functions.invoke(isByot?'byot-submissions':'manage-annotators',{body:actionBody});
+      if(invokeError)throw invokeError;
+      if(!result?.success)throw new Error(result?.error||'Unable to save the review decision.');
+      message('reviewerMessage',result.message||'Review decision saved.','success');
+      await loadReviewerDashboard(user);
+     }catch(err){message('reviewerMessage',err.message||'Unable to save the review decision.','error');button.disabled=false;}
+    });
+    actions.append(button);
+   }
+   card.append(actions);
   }
-  card.append(actions);root.append(card);
+  root.append(card);
  }
 }
 
