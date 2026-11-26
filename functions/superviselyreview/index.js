@@ -206,7 +206,7 @@ export default {
         if (String(info.datasetId) !== datasetId || String(info.projectId) !== externalProjectId) {
           return response({ error: 'The selected point cloud does not belong to the supplied dataset/project.' }, 409, cors);
         }
-        const annotationList = await supervisely('point-clouds.annotations.bulk.info', { pointcloudIds: [Number(mediaId)] }, apiHeaders);
+        const annotationList = await supervisely('point-clouds.annotations.bulk.info', { pointCloudIds: [Number(mediaId)] }, apiHeaders);
         annotation = Array.isArray(annotationList) ? annotationList[0] : annotationList;
         if (!annotation || typeof annotation !== 'object') {
           return response({ error: 'Supervisely returned no point-cloud annotation.' }, 502, cors);
