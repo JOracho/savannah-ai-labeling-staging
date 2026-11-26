@@ -451,10 +451,20 @@ async function renderQaIssues(assignment, container, viewerRole, user, refreshDa
  }
  if(viewerRole==='reviewer'){
   const form=document.createElement('form');form.style.display='grid';form.style.gap='8px';form.style.marginTop='14px';
-  const categoryLabel=document.createElement('label');categoryLabel.textContent='Error category';
-  const category=document.createElement('select');category.required=true;category.multiple=true;category.size=5;category.style.cssText='width:100%;padding:10px;border:1px solid #d7d9d2;border-radius:4px;font:inherit;min-height:150px';
-  const categoryHint=document.createElement('p');categoryHint.className='hint';categoryHint.textContent='Select one or more categories. Use Ctrl (Windows) or Command (Mac) to select multiple categories.';
-  for(const [value,label] of [['missing_label','Missing object / label'],['incorrect_class','Incorrect class'],['bounding_box','Cuboid placement / dimensions'],['cuboid_orientation','Cuboid orientation / rotation'],['segmentation','Segmentation'],['tracking','Object tracking'],['geometry','Geometry / alignment'],['attributes','Incorrect object attributes'],['duplicate','Duplicate annotation'],['format','Format / export'],['other','Other']]){const option=document.createElement('option');option.value=value;option.textContent=label;category.append(option);}
+  const categoryLabel=document.createElement('label');categoryLabel.textContent='Choose error categories';
+  const categoryOptions=[['missing_label','Missing object / label'],['incorrect_class','Incorrect class'],['bounding_box','Cuboid placement / dimensions'],['cuboid_orientation','Cuboid orientation / rotation'],['segmentation','Segmentation'],['tracking','Object tracking'],['geometry','Geometry / alignment'],['attributes','Incorrect object attributes'],['duplicate','Duplicate annotation'],['format','Format / export'],['other','Other']];
+  const selectedCategories=new Set();
+  const categoryChoices=document.createElement('div');categoryChoices.style.cssText='display:flex;flex-wrap:wrap;gap:8px';
+  const selectedLabel=document.createElement('label');selectedLabel.textContent='Selected error categories';
+  const selectedDisplay=document.createElement('div');selectedDisplay.style.cssText='display:flex;flex-wrap:wrap;gap:6px;min-height:24px;padding:4px 0';
+  const categoryHint=document.createElement('p');categoryHint.className='hint';categoryHint.textContent='Click each category that applies. Click it again to remove it.';
+  const categoryButtons=[];
+  function renderSelectedCategories(){
+   selectedDisplay.replaceChildren();
+   for(const [value,label] of categoryOptions){if(!selectedCategories.has(value))continue;const chip=document.createElement('span');chip.textContent='• '+label;chip.style.cssText='display:inline-flex;align-items:center;padding:5px 9px;border-radius:16px;background:#e8f1e9;color:#245b36;border:1px solid #c8ddcb;font-size:13px';selectedDisplay.append(chip);}
+   for(const entry of categoryButtons){const active=selectedCategories.has(entry.value);entry.button.className=active?'btn':'btn secondary';entry.button.setAttribute('aria-pressed',String(active));}
+  }
+  for(const [value,label] of categoryOptions){const button=document.createElement('button');button.type='button';button.className='btn secondary';button.textContent=label;button.setAttribute('aria-pressed','false');button.addEventListener('click',()=>{if(selectedCategories.has(value))selectedCategories.delete(value);else selectedCategories.add(value);renderSelectedCategories();});categoryButtons.push({value,button});categoryChoices.append(button);}
   const severityLabel=document.createElement('label');severityLabel.textContent='Severity';
   const severity=document.createElement('select');severity.style.cssText=category.style.cssText;for(const [value,label] of [['minor','Minor (−1 point)'],['moderate','Moderate (−3 points)'],['major','Major (−5 points)'],['critical','Critical (−10 points)']]){const option=document.createElement('option');option.value=value;option.textContent=label;severity.append(option);}
   const locationLabel=document.createElement('label');locationLabel.textContent='Object, frame or file reference (optional)';
@@ -463,12 +473,12 @@ async function renderQaIssues(assignment, container, viewerRole, user, refreshDa
   const description=document.createElement('textarea');description.rows=3;description.maxLength=2000;description.required=true;description.placeholder='Explain what is wrong and what the annotator must change…';description.style.cssText='width:100%;padding:10px;border:1px solid #d7d9d2;border-radius:4px;font:inherit';
   const add=document.createElement('button');add.type='submit';add.className='btn';add.textContent='Add QA issue';
   const status=document.createElement('p');status.className='hint';
-  form.append(categoryLabel,category,categoryHint,severityLabel,severity,locationLabel,location,descriptionLabel,description,add,status);
+  form.append(categoryLabel,categoryChoices,categoryHint,severityLabel,severity,locationLabel,location,selectedLabel,selectedDisplay,descriptionLabel,description,add,status);
   form.addEventListener('submit',async ev=>{ev.preventDefault();add.disabled=true;status.textContent='Saving QA issue…';try{
    if(!assignment.projectId||!assignment.annotatorId)throw new Error('Assignment details are incomplete. Refresh the review queue.');
-   const selectedCategories=Array.from(category.selectedOptions).map(option=>option.value);
-   if(!selectedCategories.length)throw new Error('Select at least one error category.');
-   const issueRows=selectedCategories.map(categoryValue=>({assignment_id:assignment.id,project_id:assignment.projectId,annotator_user_id:assignment.annotatorId,reviewer_user_id:user.id,category:categoryValue,severity:severity.value,location_reference:location.value.trim()||null,description:description.value.trim()}));
+   const selectedCategoryValues=Array.from(selectedCategories);
+   if(!selectedCategoryValues.length)throw new Error('Select at least one error category.');
+   const issueRows=selectedCategoryValues.map(categoryValue=>({assignment_id:assignment.id,project_id:assignment.projectId,annotator_user_id:assignment.annotatorId,reviewer_user_id:user.id,category:categoryValue,severity:severity.value,location_reference:location.value.trim()||null,description:description.value.trim()}));
    const {data:created,error:createError}=await supabase.from('qa_issues').insert(issueRows).select('id');
    if(createError)throw createError;if(!created||created.length!==issueRows.length)throw new Error('Not all QA issues were saved. Refresh and check the issue report.');
    await refreshDashboard();
