@@ -91,6 +91,21 @@ a{color:inherit}.topbar{background:var(--green);color:#fff;padding:14px 0}.wrap{
     <section class="subpanel" style="margin:18px 0">
       <h4>Create a Supervisely project</h4>
       <p class="muted">Creates a new image project in Savannah's Supervisely workspace and adds its access link to the selected client account in this portal. Leave Client account UUID blank to create a test project under your administrator account.</p>
+      <form id="attachSuperviselyForm" style="margin:14px 0;padding:14px;border:1px solid #d7d9d2;border-radius:6px">
+        <h5 style="margin:0 0 8px;color:var(--green)">Attach Supervisely to an existing Savannah project</h5>
+        <label for="attachSuperviselyProject">Existing unassigned project</label>
+        <select id="attachSuperviselyProject" required style="width:100%;padding:12px;border:1px solid #d7d9d2;border-radius:4px;font:inherit">
+          <option value="">Loading unassigned projects…</option>
+        </select>
+        <label for="attachSuperviselyDataType">Supervisely data type</label>
+        <select id="attachSuperviselyDataType" required style="width:100%;padding:12px;border:1px solid #d7d9d2;border-radius:4px;font:inherit">
+          <option value="point_clouds" selected>LiDAR / 3D point cloud</option>
+          <option value="images">Images</option>
+          <option value="videos">Videos</option>
+        </select>
+        <button class="btn" id="attachSuperviselyButton" type="submit" style="margin-top:12px">Attach workspace to selected project</button>
+      </form>
+      <div id="attachSuperviselyMessage" class="notice hidden" role="status"></div>
       <form id="createSuperviselyForm">
         <label for="newProjectTitle">Project title</label>
         <input id="newProjectTitle" maxlength="120" required placeholder="e.g. Savannah Demo - Vehicle Detection">
@@ -1281,6 +1296,31 @@ $('refreshCvatAnnotationButton').addEventListener('click',async()=>{
 });
 
 let currentPortalUser = null;
+$('attachSuperviselyForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const button=$('attachSuperviselyButton');
+  const projectId=$('attachSuperviselyProject').value;
+  if(!projectId){message('attachSuperviselyMessage','Choose an existing unassigned Savannah project.','error');return;}
+  button.disabled=true;
+  $('attachSuperviselyMessage').classList.add('hidden');
+  try{
+    const {data,error}=await supabase.functions.invoke('create-supervisely-project',{body:{
+      project_id:projectId,
+      data_type:$('attachSuperviselyDataType').value
+    }});
+    if(error)throw error;
+    if(!data?.success)throw new Error(data?.error||'Unable to attach the Supervisely workspace.');
+    message('attachSuperviselyMessage',
+      (data.already_assigned?'This project was already linked. ':'Workspace attached successfully. ')+
+      'Supervisely project ID: '+(data.supervisely_project_id||'confirmed'),
+      'success');
+    await loadAdminPanel();
+    if(currentPortalUser)await showDashboard(currentPortalUser,true);
+  }catch(err){
+    message('attachSuperviselyMessage',err.message||'Unable to attach the Supervisely workspace.','error');
+    button.disabled=false;
+  }
+});
 $('createSuperviselyForm').addEventListener('submit', async (e) => {
   e.preventDefault();
   const button = $('createSuperviselyButton');
@@ -1412,6 +1452,29 @@ async function loadAdminPanel(){
  const {data,error}=await supabase.from('projects').select('id,project_code,title,client_user_id,service_type,description,annotation_tool,annotation_workspace_url,tool_access_mode,external_tool_name,status,progress_percent,due_date,created_at').order('created_at',{ascending:false});
  if(error) throw error;
  adminProjects=data||[];
+ const attachSelect=$('attachSuperviselyProject');
+ if(attachSelect){
+   attachSelect.replaceChildren();
+   const attachPlaceholder=document.createElement('option');
+   attachPlaceholder.value='';
+   attachPlaceholder.textContent='Choose an unassigned managed project';
+   attachSelect.append(attachPlaceholder);
+   const attachable=adminProjects.filter(project=>!project.annotation_tool&&!project.annotation_workspace_url&&project.tool_access_mode==='managed');
+   for(const project of attachable){
+     const option=document.createElement('option');
+     option.value=project.id;
+     option.textContent=(project.project_code?project.project_code+' · ':'')+project.title+' · '+project.service_type;
+     attachSelect.append(option);
+   }
+   if(!attachable.length){
+     attachPlaceholder.textContent='No unassigned managed projects available';
+     attachSelect.disabled=true;
+     $('attachSuperviselyButton').disabled=true;
+   }else{
+     attachSelect.disabled=false;
+     $('attachSuperviselyButton').disabled=false;
+   }
+ }
  const {data:clientProfiles,error:clientProfilesError}=await supabase.from('profiles').select('id,email,full_name,role').eq('role','client').order('email',{ascending:true});
  if(clientProfilesError)throw clientProfilesError;
  adminClientProfiles=clientProfiles||[];
