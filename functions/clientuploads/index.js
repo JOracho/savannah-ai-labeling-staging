@@ -1,5 +1,3 @@
-import { S3Client, PutObjectCommand, GetObjectCommand, HeadObjectCommand } from "@aws-sdk/client-s3";
-import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
 const BUCKET = "client-project-uploads";
 const MAX_FILE = 50 * 1024 * 1024;
@@ -7,7 +5,53 @@ const MAX_TOTAL = 150 * 1024 * 1024;
 const MAX_FILES = 10;
 const ORIGINS = new Set(["https://joracho.github.io", "http://localhost:3000", "http://127.0.0.1:5500"]);
 const MIME = { zip:"application/zip", tar:"application/x-tar", gz:"application/gzip", pcd:"application/octet-stream", bin:"application/octet-stream", png:"image/png", jpg:"image/jpeg", jpeg:"image/jpeg", webp:"image/webp", mp4:"video/mp4", json:"application/json", csv:"text/csv", pdf:"application/pdf", txt:"text/plain" };
-const s3 = new S3Client({ forcePathStyle: true });
+const AWS_REGION = process.env.AWS_REGION || "eu-central-1";
+const AWS_ENDPOINT = process.env.AWS_ENDPOINT_URL_S3;
+const AWS_ACCESS_KEY = process.env.AWS_ACCESS_KEY_ID;
+const AWS_SECRET_KEY = process.env.AWS_SECRET_ACCESS_KEY;
+
+function awsEncode(value) {
+  return encodeURIComponent(value).replace(/[!'()*]/g, c => "%" + c.charCodeAt(0).toString(16).toUpperCase());
+}
+function hex(bytes) {
+  return Array.from(new Uint8Array(bytes), b => b.toString(16).padStart(2, "0")).join("");
+}
+async function sha256(value) {
+  return hex(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(value)));
+}
+async function hmac(key, value) {
+  const cryptoKey = await crypto.subtle.importKey("raw", key, {name:"HMAC",hash:"SHA-256"}, false, ["sign"]);
+  return new Uint8Array(await crypto.subtle.sign("HMAC", cryptoKey, new TextEncoder().encode(value)));
+}
+async function signedS3Url(method, key, expiresIn, contentType) {
+  if (!AWS_ENDPOINT || !AWS_ACCESS_KEY || !AWS_SECRET_KEY) throw new Error("Neon Object Storage credentials are not configured.");
+  const endpoint = new URL(AWS_ENDPOINT);
+  const path = "/" + BUCKET + "/" + key.split("/").map(awsEncode).join("/");
+  const url = new URL(endpoint.origin + path);
+  const now = new Date();
+  const stamp = now.toISOString().replace(/[:-]|\\.\\d{3}/g, "");
+  const day = stamp.slice(0, 8);
+  const scope = day + "/" + AWS_REGION + "/s3/aws4_request";
+  const params = {
+    "X-Amz-Algorithm":"AWS4-HMAC-SHA256",
+    "X-Amz-Credential":AWS_ACCESS_KEY + "/" + scope,
+    "X-Amz-Date":stamp,
+    "X-Amz-Expires":String(expiresIn),
+    "X-Amz-SignedHeaders":contentType ? "content-type;host" : "host"
+  };
+  const canonicalQuery = Object.keys(params).sort().map(k => awsEncode(k) + "=" + awsEncode(params[k])).join("&");
+  const canonicalHeaders = contentType ? "content-type:" + contentType.trim() + "\\nhost:" + url.host + "\\n" : "host:" + url.host + "\\n";
+  const signedHeaders = contentType ? "content-type;host" : "host";
+  const canonicalRequest = [method, url.pathname, canonicalQuery, canonicalHeaders, signedHeaders, "UNSIGNED-PAYLOAD"].join("\\n");
+  const stringToSign = ["AWS4-HMAC-SHA256", stamp, scope, await sha256(canonicalRequest)].join("\\n");
+  const kDate = await hmac(new TextEncoder().encode("AWS4" + AWS_SECRET_KEY), day);
+  const kRegion = await hmac(kDate, AWS_REGION);
+  const kService = await hmac(kRegion, "s3");
+  const kSigning = await hmac(kService, "aws4_request");
+  const signature = hex(await crypto.subtle.sign("HMAC", await crypto.subtle.importKey("raw", kSigning, {name:"HMAC",hash:"SHA-256"}, false, ["sign"]), new TextEncoder().encode(stringToSign)));
+  url.search = canonicalQuery + "&X-Amz-Signature=" + signature;
+  return url.toString();
+}
 const enc = encodeURIComponent;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
@@ -78,7 +122,7 @@ export default {
         const uploads=[];
         for(let i=0;i<rows.length;i++) {
           const row=rows[i],f=files[i];
-          const upload_url=await getSignedUrl(s3,new PutObjectCommand({Bucket:BUCKET,Key:row.storage_path,ContentType:f.mime}),{expiresIn:600});
+          const upload_url=await signedS3Url("PUT",row.storage_path,600,f.mime);
           uploads.push({id:row.id||null,storage_path:row.storage_path,upload_url,method:"PUT",headers:{"Content-Type":f.mime}});
         }
         // Retrieve inserted rows to return their generated IDs in request order.
@@ -97,7 +141,7 @@ export default {
         if(rows.length!==body.file_ids.length) return json({error:"One or more uploaded files could not be found for this client."},404,headers);
         for(const row of rows) {
           if(row.upload_status!=="pending") continue;
-          const url=await getSignedUrl(s3,new HeadObjectCommand({Bucket:BUCKET,Key:row.storage_path}),{expiresIn:60});
+          const url=await signedS3Url("HEAD",row.storage_path,60);
           const head=await fetch(url,{method:"HEAD"});
           if(!head.ok||Number(head.headers.get("content-length"))!==Number(row.file_size_bytes))
             return json({error:"A file is missing or its size does not match. Please upload it again."},409,headers);
@@ -111,7 +155,7 @@ export default {
         const rows=await db("/project_request_files?select=id,project_request_id,uploaded_by,file_name,storage_path,mime_type,file_size_bytes,upload_status,created_at,project_requests(project_title,contact_name,contact_email)&order=created_at.desc&limit=500",token);
         const files=[];
         for(const row of rows) {
-          const download_url=row.upload_status==="received" ? await getSignedUrl(s3,new GetObjectCommand({Bucket:BUCKET,Key:row.storage_path}),{expiresIn:300}) : null;
+          const download_url=row.upload_status==="received" ? await signedS3Url("GET",row.storage_path,300) : null;
           files.push({id:row.id,project_request_id:row.project_request_id,file_name:row.file_name,storage_path:row.storage_path,mime_type:row.mime_type,file_size_bytes:row.file_size_bytes,upload_status:row.upload_status,created_at:row.created_at,project:row.project_requests||{},download_url});
         }
         return json({success:true,files},200,headers);
