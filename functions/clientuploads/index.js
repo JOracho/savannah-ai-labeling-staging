@@ -29,7 +29,7 @@ async function signedS3Url(method, key, expiresIn, contentType) {
   const path = "/" + BUCKET + "/" + key.split("/").map(awsEncode).join("/");
   const url = new URL(endpoint.origin + path);
   const now = new Date();
-  const stamp = now.toISOString().replace(/[:-]|\\.\\d{3}/g, "");
+  const stamp = now.toISOString().replace(/[-:.]/g, "");
   const day = stamp.slice(0, 8);
   const scope = day + "/" + AWS_REGION + "/s3/aws4_request";
   const params = {
@@ -40,10 +40,10 @@ async function signedS3Url(method, key, expiresIn, contentType) {
     "X-Amz-SignedHeaders":contentType ? "content-type;host" : "host"
   };
   const canonicalQuery = Object.keys(params).sort().map(k => awsEncode(k) + "=" + awsEncode(params[k])).join("&");
-  const canonicalHeaders = contentType ? "content-type:" + contentType.trim() + "\\nhost:" + url.host + "\\n" : "host:" + url.host + "\\n";
+  const canonicalHeaders = contentType ? "content-type:" + contentType.trim() + "\nhost:" + url.host + "\n" : "host:" + url.host + "\n";
   const signedHeaders = contentType ? "content-type;host" : "host";
-  const canonicalRequest = [method, url.pathname, canonicalQuery, canonicalHeaders, signedHeaders, "UNSIGNED-PAYLOAD"].join("\\n");
-  const stringToSign = ["AWS4-HMAC-SHA256", stamp, scope, await sha256(canonicalRequest)].join("\\n");
+  const canonicalRequest = [method, url.pathname, canonicalQuery, canonicalHeaders, signedHeaders, "UNSIGNED-PAYLOAD"].join("\n");
+  const stringToSign = ["AWS4-HMAC-SHA256", stamp, scope, await sha256(canonicalRequest)].join("\n");
   const kDate = await hmac(new TextEncoder().encode("AWS4" + AWS_SECRET_KEY), day);
   const kRegion = await hmac(kDate, AWS_REGION);
   const kService = await hmac(kRegion, "s3");
