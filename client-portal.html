@@ -52,7 +52,10 @@ a{color:inherit}.topbar{background:var(--green);color:#fff;padding:14px 0}.wrap{
       <label for="requestVolume">Estimated volume</label><input id="requestVolume" maxlength="160" placeholder="e.g. 10,000 frames, 250,000 objects">
       <label for="requestDeadline">Target deadline (optional)</label><input id="requestDeadline" type="date">
       <label for="requestDatasetLink">Secure dataset link (optional)</label><input id="requestDatasetLink" type="url" maxlength="1000" placeholder="https://…">
-      <p class="hint">Provide a restricted HTTPS share link if ready. Do not paste passwords or API keys. Direct file upload is not enabled yet.</p>
+      <p class="hint">Provide a restricted HTTPS share link if ready. Do not paste passwords or API keys.</p>
+      <label for="requestFiles">Upload project files (optional)</label>
+      <input id="requestFiles" type="file" multiple accept=".zip,.tar,.tar.gz,.gz,.pcd,.bin,.png,.jpg,.jpeg,.webp,.mp4,.json,.csv,.pdf,.txt">
+      <p class="hint">Up to 10 files, 50 MB each and 150 MB total. Accepted: ZIP, TAR, GZ, PCD, BIN, PNG, JPG, WEBP, MP4, JSON, CSV, PDF and TXT. Files are stored privately and sent to Savannah administration.</p>
       <label for="requestToolPreference">Preferred annotation workspace</label><select id="requestToolPreference" required style="width:100%;padding:12px;border:1px solid #d7d9d2;border-radius:4px;font:inherit"><option value="Savannah-managed workspace (Supervisely or CVAT)">Savannah-managed workspace (Supervisely or CVAT)</option><option value="Client-owned workspace (BYOT)">Client-owned workspace (BYOT)</option><option value="Discuss with Savannah">Discuss with Savannah</option></select>
       <label for="requestBrief">Project brief, annotation instructions and quality requirements</label><textarea id="requestBrief" rows="4" maxlength="5000" required style="width:100%;padding:12px;border:1px solid #d7d9d2;border-radius:4px;font:inherit" placeholder="Describe the task, object classes, labeling rules, expected output and quality requirements."></textarea>
       <button class="btn" id="submitClientProjectRequest" type="submit" style="margin-top:16px">Submit project request</button>
@@ -83,6 +86,11 @@ a{color:inherit}.topbar{background:var(--green);color:#fff;padding:14px 0}.wrap{
       <p class="muted">Review applicants, record notes and update application status. CV attachments continue to arrive by email while secure CV file syncing is completed.</p>
       <div id="adminAnnotatorApplications" class="project-list"><p class="muted">Loading annotator applications…</p></div>
       <div id="adminAnnotatorApplicationsMessage" class="notice hidden" role="status"></div>
+    </section>
+    <section class="subpanel" style="margin:18px 0">
+      <div class="project-top"><div><h3 style="color:var(--green);font: bold 24px Georgia,serif;margin:0 0 6px">Incoming Client Files</h3><p class="muted">Private files uploaded with client project requests. Download links are temporary and administrator-only.</p></div><button class="btn secondary" id="refreshClientFiles" type="button">Refresh files</button></div>
+      <div id="adminClientFiles" class="project-list"><p class="muted">Loading client files…</p></div>
+      <div id="adminClientFilesMessage" class="notice hidden" role="status"></div>
     </section>
     <section class="subpanel" style="margin:18px 0"><h3 style="color:var(--green);font: bold 24px Georgia,serif;margin:0 0 6px">Incoming project requests</h3>
       <p class="muted">Review client submissions before creating or activating an annotation project. Accepting a request does not automatically create a Supervisely or CVAT project.</p>
@@ -354,7 +362,8 @@ const FUNCTION_URLS = {
   'supervisely-annotation-review': 'https://br-calm-cherry-b973fs8j-superviselyreview.compute.c-7.eu-central-1.aws.neon.tech/',
   'cvat-annotation-review': 'https://br-calm-cherry-b973fs8j-cvatreview.compute.c-7.eu-central-1.aws.neon.tech/',
   'create-supervisely-project': 'https://br-calm-cherry-b973fs8j-slyproject.compute.c-7.eu-central-1.aws.neon.tech/',
-  'cvat-connection-test': 'https://br-calm-cherry-b973fs8j-cvatconnect.compute.c-7.eu-central-1.aws.neon.tech/'
+  'cvat-connection-test': 'https://br-calm-cherry-b973fs8j-cvatconnect.compute.c-7.eu-central-1.aws.neon.tech/',
+  'client-uploads': 'https://br-calm-cherry-b973fs8j-clientuploads.compute.c-7.eu-central-1.aws.neon.tech/'
 };
 const neon = createClient({ auth: { adapter: SupabaseAuthAdapter(), url: NEON_AUTH_URL }, dataApi: { url: NEON_DATA_API_URL } });
 const authClient = createAuthClient(NEON_AUTH_URL);
@@ -850,6 +859,24 @@ async function loadClientProjectRequests(user){
  if(!data?.length){const p=document.createElement('p');p.className='muted';p.textContent='You have not submitted any project requests yet.';root.append(p);return;}
  for(const r of data){const card=document.createElement('article');card.className='subpanel';const head=document.createElement('div');head.className='project-top';const title=document.createElement('strong');title.textContent=r.project_title;const status=document.createElement('span');status.className='pill';status.textContent=requestStatusLabel(r.status);head.append(title,status);card.append(head,requestDetail('Service',r.service_type),requestDetail('Volume',r.estimated_volume),requestDetail('Deadline',requestDate(r.target_deadline)));const note=document.createElement('p');note.className='hint';note.textContent=r.status==='accepted'?'Accepted. Savannah will confirm project setup and next steps.':r.status==='declined'?'This request has been closed. Contact your project representative for clarification.':r.status==='converted'?'This request has been converted into a Savannah project.':'This request is being reviewed and is not yet an active annotation project.';card.append(note);root.append(card);}
 }
+async function loadAdminClientFiles(){
+ const root=$('adminClientFiles');root.replaceChildren();
+ const {data,error}=await callNeonFunction(FUNCTION_URLS['client-uploads'],{action:'admin_list_client_files'});
+ if(error)throw error;
+ const files=data?.files||[];
+ if(!files.length){const p=document.createElement('p');p.className='muted';p.textContent='No client files have been uploaded yet.';root.append(p);return;}
+ for(const f of files){
+  const card=document.createElement('article');card.className='subpanel';
+  const head=document.createElement('div');head.className='project-top';
+  const title=document.createElement('strong');title.textContent=f.file_name;
+  const status=document.createElement('span');status.className='pill';status.textContent=f.upload_status==='received'?'Received':'Pending upload';head.append(title,status);card.append(head);
+  const project=f.project||{};
+  card.append(requestDetail('Project',project.project_title||'Project request'),requestDetail('Client',(project.contact_name||'Client')+(project.contact_email?' · '+project.contact_email:'')),requestDetail('File details',f.mime_type+' · '+(Number(f.file_size_bytes)/1048576).toFixed(2)+' MB'),requestDetail('Submitted',new Date(f.created_at).toLocaleString()));
+  if(f.download_url){const link=document.createElement('a');link.href=f.download_url;link.target='_blank';link.rel='noopener noreferrer';link.className='tool-link';link.textContent='Download private file ↗';card.append(link);}
+  root.append(card);
+ }
+}
+$('refreshClientFiles')?.addEventListener('click',async()=>{const button=$('refreshClientFiles');button.disabled=true;try{await loadAdminClientFiles();message('adminClientFilesMessage','Client file list refreshed.','success');}catch(e){message('adminClientFilesMessage',e.message||'Unable to load client files.','error');}finally{button.disabled=false;}});
 async function loadAdminProjectRequests(){
  const root=$('adminProjectRequests');root.replaceChildren();
  const {data,error}=await supabase.from('project_requests').select('id,contact_name,contact_email,company,project_title,service_type,data_type,estimated_volume,target_deadline,project_brief,status,created_at').order('created_at',{ascending:false});
@@ -871,9 +898,23 @@ $('clientProjectRequestForm').addEventListener('submit',async(event)=>{
   const email=$('requestContactEmail').value.trim(),link=$('requestDatasetLink').value.trim();if(link){const parsed=new URL(link);if(parsed.protocol!=='https:')throw new Error('Dataset links must use HTTPS.');}
   const brief=['Project instructions and quality requirements:\n'+$('requestBrief').value.trim(),'Dataset link (restricted HTTPS): '+(link||'Not supplied yet; coordinate secure transfer with Savannah.'),'Preferred annotation workspace: '+$('requestToolPreference').value].join('\n\n');
   const payload={submitted_by:user.id,contact_name:$('requestContactName').value.trim(),contact_email:email,company:$('requestCompany').value.trim()||null,project_title:$('requestProjectTitle').value.trim(),service_type:$('requestServiceType').value,data_type:$('requestDataType').value.trim()||null,estimated_volume:$('requestVolume').value.trim()||null,target_deadline:$('requestDeadline').value||null,project_brief:brief};
+  const selectedFiles=Array.from($('requestFiles').files||[]);
   const {data,error}=await supabase.from('project_requests').insert(payload).select('id').single();if(error)throw error;
+  if(selectedFiles.length){
+    const intent=await callNeonFunction(FUNCTION_URLS['client-uploads'],{action:'client_upload_intent',project_request_id:data.id,files:selectedFiles.map(file=>({name:file.name,size:file.size,type:file.type}))});
+    if(intent.error)throw new Error('Project request '+data.id+' was saved, but file upload could not start: '+intent.error.message);
+    const uploadedIds=[];
+    for(let i=0;i<selectedFiles.length;i++){
+      const target=intent.data.files[i],file=selectedFiles[i];
+      const put=await fetch(target.upload_url,{method:'PUT',headers:target.headers,body:file});
+      if(!put.ok)throw new Error('Project request '+data.id+' was saved, but '+file.name+' did not finish uploading. Please contact Savannah with this reference.');
+      uploadedIds.push(target.id);
+    }
+    const finalized=await callNeonFunction(FUNCTION_URLS['client-uploads'],{action:'client_finalize_upload',file_ids:uploadedIds});
+    if(finalized.error)throw new Error('Project request '+data.id+' was saved, but file verification is incomplete: '+finalized.error.message);
+  }
   $('clientProjectRequestForm').reset();$('requestContactEmail').value=user.email||email;$('requestContactName').value=user.user_metadata?.full_name||user.name||'';
-  message('clientRequestMessage','Project request submitted. Reference: '+data.id+'. Savannah will review it before annotation work begins.','success');await loadClientProjectRequests(user);
+  message('clientRequestMessage','Project request submitted'+(selectedFiles.length?' with '+selectedFiles.length+' private file(s)':'')+'. Reference: '+data.id+'. Savannah will review it before annotation work begins.','success');await loadClientProjectRequests(user);
  }catch(e){message('clientRequestMessage',e.message||'Unable to submit your project request.','error');}finally{button.disabled=false;}
 });
 function labelStatus(s){return ({project_submitted:'Project submitted',data_received:'Data received',data_verified:'Data verified',annotation_in_progress:'Annotation in progress',quality_assurance:'Quality assurance',client_review:'Client review',revision_required:'Revision required',completed:'Completed',delivered:'Delivered',on_hold:'On hold'})[s]||s;}
@@ -1522,6 +1563,7 @@ async function loadAdminPanel(){
  if(clientProfilesError)throw clientProfilesError;
  adminClientProfiles=clientProfiles||[];
  try{await loadAdminProjectRequests();}catch(err){message('adminProjectRequestsMessage','Unable to load project requests: '+err.message,'error');}
+ try{await loadAdminClientFiles();}catch(err){message('adminClientFilesMessage','Unable to load client files: '+err.message,'error');}
  try{await loadAdminClientInquiries();}catch(err){message('adminClientInquiriesMessage','Unable to load client enquiries: '+err.message,'error');}
  try{await loadAdminAnnotatorApplications();}catch(err){message('adminAnnotatorApplicationsMessage','Unable to load annotator applications: '+err.message,'error');}
  populateCvatProjectOptions();
