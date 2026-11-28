@@ -1,0 +1,32 @@
+name: Package clientuploads function
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'functions/clientuploads/**'
+      - '.github/workflows/package-clientuploads.yml'
+jobs:
+  bundle:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Install function dependencies and bundler
+        working-directory: functions/clientuploads
+        run: |
+          npm install --no-audit --no-fund
+          npm install --no-save esbuild --no-audit --no-fund
+      - name: Bundle function for Neon
+        working-directory: functions/clientuploads
+        run: |
+          mkdir -p dist
+          npx esbuild index.js --bundle --platform=node --format=esm --target=node24 --outfile=dist/index.mjs
+          cd dist
+          zip -q clientuploads.zip index.mjs
+      - uses: actions/upload-artifact@v4
+        with:
+          name: clientuploads-bundle
+          path: functions/clientuploads/dist/clientuploads.zip
+          retention-days: 2
