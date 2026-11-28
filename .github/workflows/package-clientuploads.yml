@@ -30,3 +30,4 @@ jobs:
           name: clientuploads-bundle
           path: functions/clientuploads/dist/clientuploads.zip
           retention-days: 2
+# Build artifact contains one bundled index.mjs with SDK dependencies included.
